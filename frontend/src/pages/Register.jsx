@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import api from "../api";
-import "../styles/Register.css";
+import "../styles/register.css";
 
 export default function Register() {
   const navigate = useNavigate();
