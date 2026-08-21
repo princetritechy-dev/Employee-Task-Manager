@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import api from "../api";
 import "../styles/register.css";
 
@@ -17,6 +17,8 @@ export default function Register() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showAdminCode, setShowAdminCode] = useState(false);
 
   function change(e) {
     setForm({
@@ -180,18 +182,31 @@ export default function Register() {
                 Password
               </label>
 
-              <input
-                id="password"
-                className="register-input"
-                name="password"
-                required
-                minLength={6}
-                type="password"
-                value={form.password}
-                onChange={change}
-                placeholder="Minimum 6 characters"
-                autoComplete="new-password"
-              />
+              <div className="register-input-wrapper">
+
+                <input
+                  id="password"
+                  className="register-input"
+                  name="password"
+                  required
+                  minLength={6}
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={change}
+                  placeholder="Minimum 6 characters"
+                  autoComplete="new-password"
+                />
+
+                <button
+                  type="button"
+                  className="register-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+
+              </div>
 
             </div>
 
@@ -230,16 +245,29 @@ export default function Register() {
                   Admin Registration Code
                 </label>
 
-                <input
-                  id="adminCode"
-                  className="register-input"
-                  name="adminCode"
-                  required
-                  type="password"
-                  value={form.adminCode}
-                  onChange={change}
-                  placeholder="Enter admin registration code"
-                />
+                <div className="register-input-wrapper">
+
+                  <input
+                    id="adminCode"
+                    className="register-input"
+                    name="adminCode"
+                    required
+                    type={showAdminCode ? "text" : "password"}
+                    value={form.adminCode}
+                    onChange={change}
+                    placeholder="Enter admin registration code"
+                  />
+
+                  <button
+                    type="button"
+                    className="register-password-toggle"
+                    onClick={() => setShowAdminCode((prev) => !prev)}
+                    aria-label={showAdminCode ? "Hide code" : "Show code"}
+                  >
+                    {showAdminCode ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+
+                </div>
 
                 <small>
                   To register as an admin, please enter the authorization code provided by your administrator.

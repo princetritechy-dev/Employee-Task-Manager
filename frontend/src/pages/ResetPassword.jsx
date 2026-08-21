@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import api from "../api";
 import "../styles/ResetPassword.css";
 
@@ -14,6 +15,9 @@ export default function ResetPassword() {
   const [error, setError] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,23 +79,49 @@ export default function ResetPassword() {
       onSubmit={handleSubmit}
     >
 
-      <input
-        className="password-input"
-        type="password"
-        placeholder="New password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <div className="password-input-wrapper">
 
-      <input
-        className="password-input"
-        type="password"
-        placeholder="Confirm new password"
-        value={confirmPassword}
-        onChange={(e) =>
-          setConfirmPassword(e.target.value)
-        }
-      />
+        <input
+          className="password-input"
+          type={showPassword ? "text" : "password"}
+          placeholder="New password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+        </button>
+
+      </div>
+
+      <div className="password-input-wrapper">
+
+        <input
+          className="password-input"
+          type={showConfirmPassword ? "text" : "password"}
+          placeholder="Confirm new password"
+          value={confirmPassword}
+          onChange={(e) =>
+            setConfirmPassword(e.target.value)
+          }
+        />
+
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowConfirmPassword((prev) => !prev)}
+          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+        >
+          {showConfirmPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+        </button>
+
+      </div>
 
       <button
         className="password-submit"
