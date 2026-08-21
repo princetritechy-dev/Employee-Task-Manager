@@ -2,7 +2,6 @@
   "services": {
     "frontend": {
       "root": "frontend",
-      "framework": "vite",
       "entrypoint": "server.js"
     },
     "backend": {
