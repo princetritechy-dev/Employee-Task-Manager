@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Inter:wght@400;500;600;700;800&display=swap');
 
 * {
   box-sizing: border-box;
@@ -7,19 +7,19 @@
 :root {
   font-family: "Inter", sans-serif;
 
-  --font-display: "Montserrat", sans-serif;
+  --font-display: "Source Serif 4", Georgia, serif;
 
-  --primary: #2563EB;
-  --primary-dark: #1E40AF;
-  --primary-light: #EFF3FF;
+  --primary: #2F6F62;
+  --primary-dark: #24564B;
+  --primary-light: #E7F1EE;
 
-  --bg: #F5F7FA;
+  --bg: #F7F8FA;
   --card: #ffffff;
 
-  --text: #0B1F3A;
-  --muted: #64748B;
+  --text: #14181F;
+  --muted: #5B6472;
 
-  --border: #E2E8F0;
+  --border: #D8DCE3;
 
   --green: #16a34a;
   --green-bg: #dcfce7;
@@ -30,7 +30,7 @@
   --orange: #ea580c;
   --orange-bg: #ffedd5;
 
-  --sidebar: #0B1F3A;
+  --sidebar: #14181F;
 
   color: var(--text);
 }
@@ -41,18 +41,10 @@ body {
   color: var(--text);
 }
 
-/* =========================================
-   APP
-========================================= */
-
 .app-shell {
   min-height: 100vh;
   display: flex;
 }
-
-/* =========================================
-   SIDEBAR
-========================================= */
 
 .sidebar {
   width: 255px;
@@ -88,13 +80,13 @@ body {
   align-items: center;
   justify-content: center;
 
-  background: var(--primary);
-  border: 0;
+  background: transparent;
+  border: 1px solid var(--primary);
 
-  border-radius: 7px;
+  border-radius: 9px;
 
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 14px;
 }
 
@@ -102,13 +94,13 @@ body {
   display: block;
   font-family: var(--font-display);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sidebar-brand span {
   display: block;
   font-size: 11px;
-  color: #94A3B8;
+  color: #9ca3af;
   margin-top: 3px;
 }
 
@@ -120,7 +112,7 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
 
-  color: #64748B;
+  color: #6b7280;
 }
 
 .sidebar-nav {
@@ -138,9 +130,9 @@ body {
 
   padding: 11px 12px;
 
-  border-radius: 8px;
+  border-radius: 9px;
 
-  color: #94A3B8;
+  color: #9ca3af;
   text-decoration: none;
 
   font-size: 13px;
@@ -150,7 +142,7 @@ body {
 }
 
 .sidebar-link:hover {
-  background: #16294A;
+  background: #1f2937;
   color: white;
 }
 
@@ -159,7 +151,7 @@ body {
   color: white;
 
   box-shadow:
-    0 5px 15px rgba(37, 99, 235, 0.3);
+    0 5px 15px rgba(47, 111, 98, 0.3);
 }
 
 .sidebar-link.active::before {
@@ -187,7 +179,7 @@ body {
 
   padding: 12px;
 
-  background: #16294A;
+  background: #1f2937;
   border-radius: 10px;
 
   margin-bottom: 10px;
@@ -225,7 +217,7 @@ body {
 
 .user-info span {
   font-size: 10px;
-  color: #94A3B8;
+  color: #9ca3af;
 }
 
 .logout-btn {
@@ -234,7 +226,7 @@ body {
   border: 0;
   background: transparent;
 
-  color: #94A3B8;
+  color: #9ca3af;
 
   display: flex;
   align-items: center;
@@ -248,13 +240,9 @@ body {
 }
 
 .logout-btn:hover {
-  background: #16294A;
+  background: #1f2937;
   color: white;
 }
-
-/* =========================================
-   MAIN
-========================================= */
 
 .main-area {
   margin-left: 255px;
@@ -292,9 +280,7 @@ body {
 }
 
 .topbar h1 {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
   margin: 0;
 }
 
@@ -315,10 +301,6 @@ body {
   padding: 30px 32px 60px;
 }
 
-/* =========================================
-   PAGE HEADER
-========================================= */
-
 .page-head {
   margin-bottom: 24px;
 
@@ -331,10 +313,10 @@ body {
   margin: 0;
 
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 600;
 
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
 }
 
 .muted {
@@ -345,10 +327,6 @@ body {
 .page-head p {
   margin: 6px 0 0;
 }
-
-/* =========================================
-   STATS
-========================================= */
 
 .stats {
   display: grid;
@@ -366,7 +344,7 @@ body {
 
   border: 1px solid var(--border);
 
-  border-radius: 10px;
+  border-radius: 12px;
 
   padding: 20px;
 
@@ -375,7 +353,7 @@ body {
   overflow: hidden;
 
   box-shadow:
-    0 2px 5px rgba(11, 31, 58, 0.02);
+    0 2px 5px rgba(20, 24, 31, 0.02);
 }
 
 .stat::after {
@@ -406,45 +384,35 @@ body {
 }
 
 .stat strong {
-  font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 27px;
 
   font-weight: 800;
 
-  letter-spacing: -0.5px;
+  letter-spacing: -0.7px;
 }
-
-/* =========================================
-   CARDS
-========================================= */
 
 .card {
   background: white;
 
   border: 1px solid var(--border);
 
-  border-radius: 10px;
+  border-radius: 12px;
 
   padding: 22px;
 
   margin-bottom: 20px;
 
   box-shadow:
-    0 2px 6px rgba(11, 31, 58, 0.025);
+    0 2px 6px rgba(20, 24, 31, 0.025);
 }
 
 .card h2 {
   margin: 0 0 18px;
 
-  font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 15px;
 
   font-weight: 700;
 }
-
-/* =========================================
-   FILTERS
-========================================= */
 
 .filters {
   display: grid;
@@ -488,7 +456,7 @@ textarea:focus {
   border-color: var(--primary);
 
   box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.12);
+    0 0 0 3px rgba(47, 111, 98, 0.12);
 }
 
 label {
@@ -503,10 +471,6 @@ label {
   color: #374151;
 }
 
-/* =========================================
-   BUTTONS
-========================================= */
-
 .btn {
   border: 0;
 
@@ -518,11 +482,11 @@ label {
 
   padding: 10px 16px;
 
-  font-family: var(--font-display);
+  font-family: inherit;
 
   font-size: 12px;
 
-  font-weight: 700;
+  font-weight: 600;
 
   cursor: pointer;
 
@@ -573,10 +537,6 @@ label {
 
   font-size: 11px;
 }
-
-/* =========================================
-   TABLE
-========================================= */
 
 .table-wrap {
   overflow-x: auto;
@@ -631,7 +591,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #F5F8FF;
+  background: #f5f9f8;
 }
 
 tbody tr:last-child td {
@@ -666,10 +626,6 @@ td small {
   color: #9ca3af;
 }
 
-/* =========================================
-   LOCK STATUS
-========================================= */
-
 .lock-status {
   display: inline-flex;
 
@@ -700,10 +656,6 @@ td small {
   background: var(--green-bg);
 }
 
-/* =========================================
-   FORM
-========================================= */
-
 .card form {
   margin: 0;
 }
@@ -730,10 +682,6 @@ form.card .btn {
   margin-top: 18px;
 }
 
-/* =========================================
-   ERROR
-========================================= */
-
 .error {
   background: var(--red-bg);
 
@@ -750,16 +698,12 @@ form.card .btn {
   margin-bottom: 15px;
 }
 
-/* =========================================
-   MODAL
-========================================= */
-
 .modal-overlay {
   position: fixed;
 
   inset: 0;
 
-  background: rgba(11, 31, 58, 0.55);
+  background: rgba(20, 24, 31, 0.55);
 
   backdrop-filter: blur(4px);
 
@@ -784,12 +728,12 @@ form.card .btn {
 
   background: white;
 
-  border-radius: 12px;
+  border-radius: 14px;
 
   padding: 24px;
 
   box-shadow:
-    0 25px 60px rgba(11, 31, 58, 0.22);
+    0 25px 60px rgba(20, 24, 31, 0.22);
 
   animation: modalIn 0.2s ease;
 }
@@ -824,7 +768,7 @@ form.card .btn {
   margin: 0 0 6px;
 
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .modal-header p {
@@ -853,10 +797,6 @@ form.card .btn {
 .close-btn:hover {
   background: #e5e7eb;
 }
-
-/* =========================================
-   COMMENTS
-========================================= */
 
 .comments {
   display: flex;
@@ -908,10 +848,6 @@ form.card .btn {
   color: #374151;
 }
 
-/* =========================================
-   TASK FORM
-========================================= */
-
 .task-form {
   max-width: 900px;
 }
@@ -928,7 +864,7 @@ form.card .btn {
   margin: 0 0 4px;
 
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .form-heading p {
@@ -982,6 +918,17 @@ form.card .btn {
 
   pointer-events: none;
 }
+
+/* .task-actions {
+  display: flex;
+  gap: 10px;
+
+  margin-top: 8px;
+}
+
+.task-actions .btn {
+  margin-top: 0;
+} */
 
 .employee-cell {
   display: flex;
@@ -1080,10 +1027,6 @@ form.card .btn {
   cursor: not-allowed;
 }
 
-/* =========================================
-   CSV EXPORT
-========================================= */
-
 .tasks-header {
   width: 100%;
 
@@ -1104,7 +1047,7 @@ form.card .btn {
   margin: 0 0 5px;
 
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .tasks-header-info p {
@@ -1116,8 +1059,6 @@ form.card .btn {
   align-items: center;
   gap: 12px;
 }
-
-/* Total working hours */
 
 .export-summary {
   display: flex;
@@ -1144,12 +1085,9 @@ form.card .btn {
 .export-summary strong {
   color: var(--text);
 
-  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 800;
 }
-
-/* CSV button */
 
 .export-csv-btn {
   display: inline-flex;
@@ -1160,7 +1098,7 @@ form.card .btn {
 
   padding: 10px 15px;
 
-  border: 1px solid #BFD1FB;
+  border: 1px solid #b9d6cf;
 
   border-radius: 9px;
 
@@ -1168,7 +1106,7 @@ form.card .btn {
 
   color: var(--primary-dark);
 
-  font-family: var(--font-display);
+  font-family: inherit;
 
   font-size: 12px;
   font-weight: 700;
@@ -1183,14 +1121,14 @@ form.card .btn {
 }
 
 .export-csv-btn:hover {
-  background: #DEE8FF;
+  background: #d7ebe4;
 
-  border-color: #9DB6F5;
+  border-color: #9dc6ba;
 
   transform: translateY(-1px);
 
   box-shadow:
-    0 4px 12px rgba(37, 99, 235, 0.14);
+    0 4px 12px rgba(47, 111, 98, 0.14);
 }
 
 .export-csv-btn:active {
@@ -1216,17 +1154,12 @@ form.card .btn {
   max-width: 90%;
 
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
 
   padding: 25px;
 
-  box-shadow: 0 10px 30px rgba(11,31,58,.2);
+  box-shadow: 0 10px 30px rgba(20,24,31,.2);
 }
-
-
-/* ================================
-   TASK ACTION BUTTONS
-================================ */
 
 .task-actions {
   display: flex;
@@ -1234,20 +1167,17 @@ form.card .btn {
   gap: 8px;
 }
 
-
 .edit-btn,
 .delete-btn {
   border: none;
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-
-/* Edit Button */
 .edit-btn {
   background: var(--primary);
   color: white;
@@ -1257,8 +1187,6 @@ form.card .btn {
   background: var(--primary-dark);
 }
 
-
-/* Delete Button */
 .delete-btn {
   background: #fee2e2;
   color: #dc2626;
@@ -1267,11 +1195,6 @@ form.card .btn {
 .delete-btn:hover {
   background: #fecaca;
 }
-
-
-/* ================================
-   CANCEL BUTTON (MODAL)
-================================ */
 
 .close-btn {
   width: 100%;
@@ -1292,6 +1215,7 @@ form.card .btn {
 
   transition: all 0.2s ease;
 }
+
 .delete-btn.disabled,
 .delete-btn:disabled {
   background: #e5e7eb;
@@ -1304,7 +1228,6 @@ form.card .btn {
   background: #e5e7eb;
 }
 
-
 .close-btn:hover {
   background: #e5e7eb;
   color: #111827;
@@ -1313,18 +1236,16 @@ form.card .btn {
 .task-comments {
   margin-top:12px;
   padding:10px;
-  background:#F5F8FF;
+  background:#f4f8f7;
   border-radius:8px;
   border-left:3px solid var(--primary);
 }
-
 
 .task-comments > strong {
   display:block;
   margin-bottom:8px;
   font-size:13px;
 }
-
 
 .comment-box {
   background:white;
@@ -1333,23 +1254,15 @@ form.card .btn {
   border-radius:6px;
 }
 
-
 .comment-box p {
   margin:0;
   font-size:14px;
 }
 
-
 .comment-box small {
   color:#64748b;
   font-size:12px;
 }
-
-
-
-/* =========================================
-   MOBILE
-========================================= */
 
 .mobile-menu,
 .mobile-close {

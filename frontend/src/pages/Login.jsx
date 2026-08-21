@@ -1,23 +1,43 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api";
+import { useToast } from "../components/Toast";
 import "../styles/login.css";
 import { Lock, Mail, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Login() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [emailTouched, setEmailTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [shake, setShake] = useState(false);
+
+  const emailValid = email.length === 0 || EMAIL_RE.test(email.trim());
+
+  function triggerShake() {
+    setShake(true);
+    setTimeout(() => setShake(false), 450);
+  }
 
   async function submit(e) {
     e.preventDefault();
 
     setError("");
+
+    if (!EMAIL_RE.test(email.trim())) {
+      setEmailTouched(true);
+      triggerShake();
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -31,15 +51,17 @@ export default function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+      showToast("Signed in", "success");
+
+      setTimeout(() => {
+        navigate(user.role === "admin" ? "/admin" : "/");
+      }, 350);
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Invalid email or password"
-      );
+      const message =
+        err.response?.data?.message || "Invalid email or password";
+      setError(message);
+      showToast(message, "error");
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -93,7 +115,7 @@ export default function Login() {
       ===================================================== */}
       <div className="login-form-section">
 
-        <div className="login-card">
+        <div className={`login-card ${shake ? "shake" : ""}`}>
 
           {/* Header */}
           <div className="login-header">
@@ -119,7 +141,7 @@ export default function Login() {
           )}
 
 
-          <form onSubmit={submit}>
+          <form onSubmit={submit} noValidate>
 
             {/* =================================================
                 EMAIL
@@ -140,14 +162,20 @@ export default function Login() {
                 <input
                   id="email"
                   type="email"
+                  className={emailTouched && !emailValid ? "field-invalid" : ""}
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setEmailTouched(true)}
                   autoComplete="email"
                   required
                 />
 
               </div>
+
+              {emailTouched && !emailValid && (
+                <span className="field-error">Enter a valid email address</span>
+              )}
 
             </div>
 

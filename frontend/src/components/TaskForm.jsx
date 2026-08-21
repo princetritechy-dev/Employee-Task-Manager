@@ -123,53 +123,57 @@ export default function TaskForm({   onSaved,
         </div>
       )}
 
-      <div className="form-field">
+      <div className="grid two">
 
-        <label>
-          <FolderKanban size={14} />
-          Project
-        </label>
+        <div className="form-field">
 
-        <select
-          name="projectId"
-          value={form.projectId}
-          onChange={change}
-          required
-        >
-          <option value="">
-            Select project
-          </option>
+          <label>
+            <FolderKanban size={14} />
+            Project
+          </label>
 
-          {projects
-            .filter(
-              (p) => p.status !== "completed"
-            )
-            .map((p) => (
-              <option
-                key={p.id}
-                value={p.id}
-              >
-                {p.name} ({p.status})
-              </option>
-            ))}
-        </select>
+          <select
+            name="projectId"
+            value={form.projectId}
+            onChange={change}
+            required
+          >
+            <option value="">
+              Select project
+            </option>
 
-      </div>
+            {projects
+              .filter(
+                (p) => p.status !== "completed"
+              )
+              .map((p) => (
+                <option
+                  key={p.id}
+                  value={p.id}
+                >
+                  {p.name} ({p.status})
+                </option>
+              ))}
+          </select>
 
-      <div className="form-field">
+        </div>
 
-        <label>
-          <FileText size={14} />
-          Task title
-        </label>
+        <div className="form-field">
 
-        <input
-          name="taskTitle"
-          value={form.taskTitle}
-          onChange={change}
-          placeholder="e.g. Build employee dashboard"
-          required
-        />
+          <label>
+            <FileText size={14} />
+            Task title
+          </label>
+
+          <input
+            name="taskTitle"
+            value={form.taskTitle}
+            onChange={change}
+            placeholder="e.g. Build employee dashboard"
+            required
+          />
+
+        </div>
 
       </div>
 
@@ -181,24 +185,8 @@ export default function TaskForm({   onSaved,
           name="description"
           value={form.description}
           onChange={change}
-          rows="4"
+          rows="3"
           placeholder="Describe what you worked on..."
-        />
-
-      </div>
-
-      <div className="form-field">
-
-        <label>
-          <UserPen size={14} />
-          Assigned by
-        </label>
-
-        <input
-          name="assignedBy"
-          value={form.assignedBy}
-          onChange={change}
-          placeholder="e.g. Sourav Sobti"
         />
 
       </div>
@@ -208,25 +196,16 @@ export default function TaskForm({   onSaved,
         <div className="form-field">
 
           <label>
-            <Clock3 size={14} />
-            Time spent
+            <UserPen size={14} />
+            Assigned by
           </label>
 
-          <div className="input-with-suffix">
-
-            <input
-              type="number"
-              min="1"
-              max="1440"
-              name="timeSpent"
-              value={form.timeSpent}
-              onChange={change}
-              required
-            />
-
-            <span>minutes</span>
-
-          </div>
+          <input
+            name="assignedBy"
+            value={form.assignedBy}
+            onChange={change}
+            placeholder="e.g. Sourav Sir"
+          />
 
         </div>
 
@@ -244,6 +223,31 @@ export default function TaskForm({   onSaved,
             onChange={change}
             required
           />
+
+        </div>
+
+      </div>
+
+      <div className="form-field">
+
+        <label>
+          <Clock3 size={14} />
+          Time spent
+        </label>
+
+        <div className="input-with-suffix">
+
+          <input
+            type="number"
+            min="1"
+            max="1440"
+            name="timeSpent"
+            value={form.timeSpent}
+            onChange={change}
+            required
+          />
+
+          <span>minutes</span>
 
         </div>
 

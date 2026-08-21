@@ -8,6 +8,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Projects from "./pages/Projects";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import { ToastProvider } from "./components/Toast";
 
 
 /*
@@ -77,7 +78,8 @@ function RequireAdmin({ children }) {
 
 export default function App() {
   return (
-    <Routes>
+    <ToastProvider>
+      <Routes>
 
       {/* ==============================
           PUBLIC
@@ -154,7 +156,7 @@ export default function App() {
         path="/reset-password/:token"
         element={<ResetPassword />}
       />
-
     </Routes>
+    </ToastProvider>
   );
 }

@@ -5,6 +5,32 @@ const crypto = require("crypto");
 const { User } = require("../models");
 const sendEmail = require("../utils/sendEmail");
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
+
+const DISPOSABLE_DOMAINS = new Set([
+  "test.com",
+  "example.com",
+  // "mailinator.com",
+  // "guerrillamail.com",
+  // "10minutemail.com",
+  // "tempmail.com",
+  // "temp-mail.org",
+  // "yopmail.com",
+  // "throwawaymail.com",
+  // "fakeinbox.com",
+  // "trashmail.com",
+  // "getnada.com",
+  // "dispostable.com",
+  // "sharklasers.com",
+  // "maildrop.cc",
+]);
+
+function isDisposableEmail(email) {
+  const domain = email.split("@")[1]?.toLowerCase();
+  return DISPOSABLE_DOMAINS.has(domain);
+}
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -48,6 +74,20 @@ exports.register = async (req, res) => {
       });
     }
 
+    const normalizedEmail = (email || "").toLowerCase().trim();
+
+    if (!EMAIL_RE.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Enter a valid email address"
+      });
+    }
+
+    if (isDisposableEmail(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Use your work or personal email, not a dummy email"
+      });
+    }
+
     if (!["employee", "admin"].includes(role)) {
       return res.status(400).json({
         message: "Invalid role selected"
@@ -65,13 +105,11 @@ exports.register = async (req, res) => {
       }
     }
 
-    if (password.length < 6) {
+    if (!PASSWORD_RE.test(password)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters"
+        message: "Password must be at least 6 characters and include a letter and a number"
       });
     }
-
-    const normalizedEmail = email.toLowerCase().trim();
 
     const existing = await User.findOne({
       email: normalizedEmail
@@ -101,6 +139,11 @@ exports.register = async (req, res) => {
   } catch (error) {
     console.error("REGISTER ERROR:", error);
 
+    if (error.name === "ValidationError") {
+      const message = Object.values(error.errors)[0]?.message || "Invalid input";
+      return res.status(400).json({ message });
+    }
+
     res.status(500).json({
       message: error.message
     });
@@ -115,8 +158,16 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    const normalizedEmail = (email || "").toLowerCase().trim();
+
+    if (!EMAIL_RE.test(normalizedEmail) || !password) {
+      return res.status(400).json({
+        message: "Invalid email or password"
+      });
+    }
+
     const user = await User.findOne({
-      email: (email || "").toLowerCase().trim()
+      email: normalizedEmail
     });
 
     if (
@@ -157,13 +208,13 @@ exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
+    const normalizedEmail = (email || "").toLowerCase().trim();
+
+    if (!EMAIL_RE.test(normalizedEmail)) {
       return res.status(400).json({
-        message: "Email is required"
+        message: "Enter a valid email address"
       });
     }
-
-    const normalizedEmail = email.toLowerCase().trim();
 
     const user = await User.findOne({
       email: normalizedEmail
@@ -219,7 +270,7 @@ exports.forgotPassword = async (req, res) => {
           </p>
 
           <p>
-            <a
+            
               href="${resetURL}"
               style="
                 display: inline-block;
@@ -281,9 +332,9 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    if (password.length < 6) {
+    if (!PASSWORD_RE.test(password)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters"
+        message: "Password must be at least 6 characters and include a letter and a number"
       });
     }
 

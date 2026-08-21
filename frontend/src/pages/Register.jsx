@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Check } from "lucide-react";
 import api from "../api";
+import { useToast } from "../components/Toast";
 import "../styles/register.css";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Register() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     name: "",
@@ -19,6 +23,12 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminCode, setShowAdminCode] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const emailValid = form.email.length === 0 || EMAIL_RE.test(form.email.trim());
+  const passwordLongEnough = form.password.length >= 6;
 
   function change(e) {
     setForm({
@@ -27,10 +37,28 @@ export default function Register() {
     });
   }
 
+  function triggerShake() {
+    setShake(true);
+    setTimeout(() => setShake(false), 450);
+  }
+
   async function submit(e) {
     e.preventDefault();
 
     setError("");
+
+    if (!EMAIL_RE.test(form.email.trim())) {
+      setEmailTouched(true);
+      triggerShake();
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setPasswordTouched(true);
+      triggerShake();
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -39,16 +67,16 @@ export default function Register() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      navigate(
-        data.user.role === "admin"
-          ? "/admin"
-          : "/"
-      );
+      showToast("Account created", "success");
+
+      setTimeout(() => {
+        navigate(data.user.role === "admin" ? "/admin" : "/");
+      }, 350);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        "Registration failed"
-      );
+      const message = err.response?.data?.message || "Registration failed";
+      setError(message);
+      showToast(message, "error");
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -104,7 +132,7 @@ export default function Register() {
       ===================================================== */}
       <div className="register-form-section">
 
-        <div className="register-card">
+        <div className={`register-card ${shake ? "shake" : ""}`}>
 
           {/* Header */}
           <div className="register-header">
@@ -130,7 +158,7 @@ export default function Register() {
           )}
 
 
-          <form onSubmit={submit}>
+          <form onSubmit={submit} noValidate>
 
             {/* Name */}
             <div className="register-form-group">
@@ -162,15 +190,20 @@ export default function Register() {
 
               <input
                 id="email"
-                className="register-input"
+                className={`register-input ${emailTouched && !emailValid ? "field-invalid" : ""}`}
                 name="email"
                 required
                 type="email"
                 value={form.email}
                 onChange={change}
+                onBlur={() => setEmailTouched(true)}
                 placeholder="you@example.com"
                 autoComplete="email"
               />
+
+              {emailTouched && !emailValid && (
+                <span className="field-error">Enter a valid email address</span>
+              )}
 
             </div>
 
@@ -186,13 +219,14 @@ export default function Register() {
 
                 <input
                   id="password"
-                  className="register-input"
+                  className={`register-input ${passwordTouched && !passwordLongEnough ? "field-invalid" : ""}`}
                   name="password"
                   required
                   minLength={6}
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={change}
+                  onBlur={() => setPasswordTouched(true)}
                   placeholder="Minimum 6 characters"
                   autoComplete="new-password"
                 />
@@ -207,6 +241,13 @@ export default function Register() {
                 </button>
 
               </div>
+
+              {form.password.length > 0 && (
+                <div className={`password-check ${passwordLongEnough ? "met" : ""}`}>
+                  <Check size={13} />
+                  <span>At least 6 characters</span>
+                </div>
+              )}
 
             </div>
 

@@ -1,5 +1,7 @@
 const { Schema, model } = require("mongoose");
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const userSchema = new Schema(
   {
     name: {
@@ -16,6 +18,7 @@ const userSchema = new Schema(
       trim: true,
       lowercase: true,
       maxlength: 190,
+      match: [EMAIL_RE, "Enter a valid email address"],
     },
 
     password: {

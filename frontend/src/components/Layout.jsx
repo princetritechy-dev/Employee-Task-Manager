@@ -25,7 +25,6 @@ export default function Layout({ children, title }) {
 
 const navItems = [];
 
-// Dashboard only for employees
 if (user?.role !== "admin") {
   navItems.push({
     label: "Dashboard",
@@ -34,14 +33,12 @@ if (user?.role !== "admin") {
   });
 }
 
-// Projects for everyone
 navItems.push({
   label: "Projects",
   path: "/projects",
   icon: FolderKanban,
 });
 
-// Admin only for admins
 if (user?.role === "admin") {
   navItems.push({
     label: "Admin",
@@ -53,7 +50,6 @@ if (user?.role === "admin") {
   return (
     <div className="app-shell">
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="sidebar-overlay"
@@ -61,7 +57,6 @@ if (user?.role === "admin") {
         />
       )}
 
-      {/* Sidebar */}
       <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
 
         <div className="sidebar-brand">
@@ -133,7 +128,6 @@ if (user?.role === "admin") {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="main-area">
 
         <header className="topbar">

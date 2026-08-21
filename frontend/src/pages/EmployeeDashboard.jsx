@@ -570,12 +570,10 @@ async function handleEditTask(task) {
 
       </div>
 
-      {showEditModal && (
+{showEditModal && (
   <div className="modal-overlay">
 
     <div className="edit-modal">
-
-      <h2>Edit Task</h2>
 
       <TaskForm
         editingTask={editingTask}
@@ -585,17 +583,11 @@ async function handleEditTask(task) {
           setEditingTask(null);
         }}
         setEditingTask={setEditingTask}
-      />
-
-      <button
-        className="close-btn"
-        onClick={() => {
+        onCancel={() => {
           setShowEditModal(false);
           setEditingTask(null);
         }}
-      >
-        Cancel
-      </button>
+      />
 
     </div>
 
