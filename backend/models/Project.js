@@ -63,24 +63,6 @@ const projectSchema = new Schema(
 
     /*
     |--------------------------------------------------------------------------
-    | SUPERVISORS
-    |--------------------------------------------------------------------------
-    | Users with role "supervisor" that an admin has assigned to manage
-    | THIS project specifically — they get admin-equivalent capabilities
-    | (task board, lock/unlock, edit, employee list) but only within
-    | projects listed here. Only an admin can edit this list.
-    |--------------------------------------------------------------------------
-    */
-
-    supervisors: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | CUSTOM STATUS COLUMNS (ClickUp-style)
     |--------------------------------------------------------------------------
     | Each project can define its own Kanban columns instead of the fixed

@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import TaskBoard from "../components/TaskBoard";
 import TaskCalendar from "../components/TaskCalendar";
 import TaskDetail from "../components/TaskDetail";
+import ConfirmDialog from "../components/ConfirmDialog";
 import api from "../api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -38,11 +39,13 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
 
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "employee" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
   const [createUserError, setCreateUserError] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
 
   const [editingUser, setEditingUser] = useState(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
+  const [pendingConfirm, setPendingConfirm] = useState(null);
   const [editUserForm, setEditUserForm] = useState(null);
   const [editUserError, setEditUserError] = useState("");
   const [savingUser, setSavingUser] = useState(false);
@@ -53,7 +56,6 @@ export default function AdminDashboard() {
     setEditUserForm({
       name: person.name,
       email: person.email,
-      role: person.role,
       status: person.status,
     });
   }
@@ -76,12 +78,9 @@ export default function AdminDashboard() {
   }
 
   async function deleteUser(person) {
-    if (!window.confirm(`Delete ${person.name}? This can't be undone.`)) {
-      return;
-    }
-
     try {
       await api.delete(`/admin/users/${person.id}`);
+      setConfirmDeleteUser(null);
       await loadUsers();
     } catch (error) {
       alert(error.response?.data?.message || "Could not delete user");
@@ -175,14 +174,6 @@ export default function AdminDashboard() {
   ========================================================= */
 
   async function unlockTask(taskId) {
-    if (
-      !window.confirm(
-        "Unlock this task before the 1-hour window ends?"
-      )
-    ) {
-      return;
-    }
-
     try {
       await api.patch(
         `/tasks/admin/${taskId}/unlock`
@@ -198,10 +189,6 @@ export default function AdminDashboard() {
   }
 
   async function lockTask(taskId) {
-    if (!window.confirm("Lock this task now?")) {
-      return;
-    }
-
     try {
       await api.patch(
         `/tasks/admin/${taskId}/lock`
@@ -217,10 +204,6 @@ export default function AdminDashboard() {
   }
 
   async function deleteTask(taskId) {
-    if (!window.confirm("Delete this task? This cannot be undone.")) {
-      return;
-    }
-
     try {
       await api.delete(`/tasks/${taskId}`);
       await loadTasks();
@@ -1030,7 +1013,14 @@ export default function AdminDashboard() {
                         <button
                           className="btn small secondary"
                           onClick={() =>
-                            unlockTask(task.id)
+                            setPendingConfirm({
+                              type: "unlock",
+                              taskId: task.id,
+                              title: "Unlock this task?",
+                              message: "Unlock this task before the 1-hour window ends?",
+                              danger: false,
+                              confirmLabel: "Unlock",
+                            })
                           }
                           title="Unlock this task early"
                         >
@@ -1040,7 +1030,14 @@ export default function AdminDashboard() {
                         <button
                           className="btn small secondary"
                           onClick={() =>
-                            lockTask(task.id)
+                            setPendingConfirm({
+                              type: "lock",
+                              taskId: task.id,
+                              title: "Lock this task?",
+                              message: "This will lock the task immediately.",
+                              danger: false,
+                              confirmLabel: "Lock",
+                            })
                           }
                           title="Lock this task now"
                         >
@@ -1057,7 +1054,7 @@ export default function AdminDashboard() {
 
                     <div className="task-actions-cell">
 
-                      {!task.isLocked && (
+                      {isAdmin && !task.isLocked && (
                         <button
                           className="btn small secondary"
                           onClick={() => {
@@ -1078,12 +1075,22 @@ export default function AdminDashboard() {
                         💬 Comment
                       </button>
 
-                      <button
-                        className="btn small danger"
-                        onClick={() => deleteTask(task.id)}
-                      >
-                        Delete
-                      </button>
+                      {isAdmin && (
+                        <button
+                          className="btn small danger"
+                          onClick={() =>
+                            setPendingConfirm({
+                              type: "delete-task",
+                              taskId: task.id,
+                              title: "Delete this task?",
+                              message: "This cannot be undone.",
+                              confirmLabel: "Delete",
+                            })
+                          }
+                        >
+                          Delete
+                        </button>
+                      )}
 
                     </div>
 
@@ -1210,7 +1217,7 @@ export default function AdminDashboard() {
                         </button>
                         <button
                           className="btn small danger"
-                          onClick={() => deleteUser(person)}
+                          onClick={() => setConfirmDeleteUser(person)}
                         >
                           Delete
                         </button>
@@ -1225,7 +1232,7 @@ export default function AdminDashboard() {
               {isAdmin && !allUsers.length && (
                 <tr>
                   <td colSpan="5" className="empty">
-                    No employees or supervisors yet — add one above.
+                    No employees yet — add one above.
                   </td>
                 </tr>
               )}
@@ -1244,7 +1251,7 @@ export default function AdminDashboard() {
             <div className="modal-header">
               <div>
                 <h2>Add User</h2>
-                <p className="muted">Create an employee or supervisor account</p>
+                <p className="muted">Create an employee account</p>
               </div>
               <button
                 type="button"
@@ -1284,15 +1291,6 @@ export default function AdminDashboard() {
                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 placeholder="At least 6 characters, letter + number"
               />
-
-              <label>Role</label>
-              <select
-                value={newUser.role}
-                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              >
-                <option value="employee">Employee</option>
-                <option value="supervisor">Supervisor</option>
-              </select>
 
               <div className="form-actions" style={{ marginTop: "14px" }}>
                 <button className="btn" disabled={creatingUser}>
@@ -1346,15 +1344,6 @@ export default function AdminDashboard() {
                 onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
               />
 
-              <label>Role</label>
-              <select
-                value={editUserForm.role}
-                onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })}
-              >
-                <option value="employee">Employee</option>
-                <option value="supervisor">Supervisor</option>
-              </select>
-
               <label>Status</label>
               <select
                 value={editUserForm.status}
@@ -1380,6 +1369,34 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {confirmDeleteUser && (
+        <ConfirmDialog
+          open
+          title="Delete user?"
+          message={`Delete ${confirmDeleteUser.name}? This can't be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => deleteUser(confirmDeleteUser)}
+          onCancel={() => setConfirmDeleteUser(null)}
+        />
+      )}
+
+      <ConfirmDialog
+        open={!!pendingConfirm}
+        title={pendingConfirm?.title}
+        message={pendingConfirm?.message}
+        confirmLabel={pendingConfirm?.confirmLabel}
+        danger={pendingConfirm?.danger !== false}
+        onCancel={() => setPendingConfirm(null)}
+        onConfirm={() => {
+          const { type, taskId } = pendingConfirm;
+          setPendingConfirm(null);
+          if (type === "unlock") unlockTask(taskId);
+          if (type === "lock") lockTask(taskId);
+          if (type === "delete-task") deleteTask(taskId);
+        }}
+      />
+
 
 
       {/* =====================================================

@@ -2,7 +2,6 @@ const router = require("express").Router();
 
 const auth = require("../middleware/auth");
 const adminOnly = require("../middleware/admin");
-const supervisorOrAdmin = require("../middleware/supervisorOrAdmin");
 
 const controller = require("../controllers/taskController");
 
@@ -83,18 +82,13 @@ router.patch("/:id/subtasks/:subtaskId", auth, toggleSubtask);
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN / SUPERVISOR ROUTES
-|--------------------------------------------------------------------------
-| Routes a supervisor can reach too are gated by supervisorOrAdmin; the
-| controllers scope the actual data/permissions to whichever projects
-| that supervisor is assigned to. Routes with no supervisor use case
-| (or that are unused/legacy) stay strictly admin-only.
+| ADMIN ROUTES
 |--------------------------------------------------------------------------
 */
 
 router.get(
   "/admin/all",
-  supervisorOrAdmin,
+  adminOnly,
   controller.adminTasks
 );
 
@@ -106,7 +100,7 @@ router.get(
 
 router.get(
   "/admin/employee/:id/summary",
-  supervisorOrAdmin,
+  adminOnly,
   controller.employeeSummary
 );
 
@@ -118,13 +112,13 @@ router.patch(
 
 router.patch(
   "/admin/:id/lock",
-  supervisorOrAdmin,
+  adminOnly,
   controller.lockTask
 );
 
 router.patch(
   "/admin/:id/unlock",
-  supervisorOrAdmin,
+  adminOnly,
   controller.unlockTask
 );
 

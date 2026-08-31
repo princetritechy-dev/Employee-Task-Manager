@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import Layout from "../components/Layout";
+import ConfirmDialog from "../components/ConfirmDialog";
+import ProjectWizard from "../components/ProjectWizard";
 import api from "../api";
 
 
@@ -12,8 +14,9 @@ export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [clients, setClients] = useState([]);
-  const [form, setForm] = useState({ name: "", clientId: "", description: "", status: "ongoing", startDate: "", endDate: "", employeeIds: [] });
+  const [showWizard, setShowWizard] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [editError, setEditError] = useState("");
 
@@ -37,17 +40,13 @@ export default function Projects() {
     return () => clearInterval(interval);
   }, []);
 
-  async function create(e) {
-    e.preventDefault();
-    await api.post("/projects", { ...form, employeeIds: form.employeeIds });
-    setForm({ name: "", clientId: "", description: "", status: "ongoing", startDate: "", endDate: "", employeeIds: [] });
-    load();
-  }
-
   async function remove(id) {
-    if (confirm("Delete project?")) {
-      try { await api.delete(`/projects/${id}`); load(); }
-      catch (e) { alert(e.response?.data?.message || "Cannot delete project"); }
+    try {
+      await api.delete(`/projects/${id}`);
+      setConfirmDeleteProject(null);
+      load();
+    } catch (e) {
+      alert(e.response?.data?.message || "Cannot delete project");
     }
   }
 
@@ -80,38 +79,16 @@ export default function Projects() {
 
   return (
     <Layout title="Projects">
-      <h1>Projects</h1>
-
-      {/* Creating projects (Spaces, in ClickUp terms) is admin-only */}
-      {isAdmin && (
-      <form className="card" onSubmit={create}>
-        <h2>Create Project</h2>
-        <div className="grid two">
-          <div><label>Name</label><input required value={form.name} onChange={e => setForm({...form, name:e.target.value})}/></div>
-          <div><label>Status</label><select value={form.status} onChange={e => setForm({...form, status:e.target.value})}><option>ongoing</option><option>paused</option><option>completed</option></select></div>
+      <div className="page-head">
+        <div>
+          <h1>Projects</h1>
         </div>
-        <label>Client / Company</label>
-        <select value={form.clientId} onChange={e => setForm({...form, clientId:e.target.value})}>
-          <option value="">No client</option>
-          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <small className="muted">
-          Don't see the client you need? <Link to="/clients">Add one here</Link>.
-        </small>
-        <label>Description</label><textarea value={form.description} onChange={e => setForm({...form, description:e.target.value})}/>
-        <div className="grid two">
-          <div><label>Start date</label><input type="date" value={form.startDate} onChange={e => setForm({...form, startDate:e.target.value})}/></div>
-          <div><label>End date</label><input type="date" value={form.endDate} onChange={e => setForm({...form, endDate:e.target.value})}/></div>
-        </div>
-
-        <label>Assign employees</label>
-        <select multiple value={form.employeeIds} onChange={e => setForm({...form, employeeIds:Array.from(e.target.selectedOptions, o => o.value)})}>
-          {employees.map(e => <option key={e.id} value={e.id}>{e.name} — {e.email}</option>)}
-        </select>
-
-        <button className="btn">Create Project</button>
-      </form>
-      )}
+        {isAdmin && (
+          <button className="btn" onClick={() => setShowWizard(true)}>
+            <Plus size={16} /> New Project
+          </button>
+        )}
+      </div>
 
       <div className="grid two">
         {projects.map(p => (
@@ -133,7 +110,7 @@ export default function Projects() {
                 <button className="btn small secondary" onClick={() => startEdit(p)}>
                   <Pencil size={12} /> Edit
                 </button>
-                <button className="btn danger small" onClick={() => remove(p.id)}>Delete</button>
+                <button className="btn danger small" onClick={() => setConfirmDeleteProject(p)}>Delete</button>
               </div>
             )}
           </div>
@@ -206,6 +183,27 @@ export default function Projects() {
           </div>
         </div>
       )}
+
+      {showWizard && (
+        <ProjectWizard
+          clients={clients}
+          employees={employees}
+          onClose={() => setShowWizard(false)}
+          onCreated={() => {
+            setShowWizard(false);
+            load();
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteProject}
+        title="Delete project?"
+        message={confirmDeleteProject ? `Delete "${confirmDeleteProject.name}"?` : ""}
+        confirmLabel="Delete"
+        onConfirm={() => remove(confirmDeleteProject.id)}
+        onCancel={() => setConfirmDeleteProject(null)}
+      />
     </Layout>
   );
 }

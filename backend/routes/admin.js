@@ -1,7 +1,6 @@
 const router = require("express").Router();
 
 const auth = require("../middleware/auth");
-const supervisorOrAdmin = require("../middleware/supervisorOrAdmin");
 const adminOnly = require("../middleware/admin");
 
 const controller = require("../controllers/adminController");
@@ -9,21 +8,19 @@ const controller = require("../controllers/adminController");
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN / SUPERVISOR ROUTES
+| ADMIN ROUTES
 |--------------------------------------------------------------------------
 | Every route in this file requires:
 |
 | 1. Valid JWT
 | 2. Existing user
 | 3. Active account
-| 4. Admin OR supervisor role — controllers scope the data further for
-|    supervisors (their managed projects only), so nothing here leaks
-|    company-wide data to a supervisor.
+| 4. Admin role
 |--------------------------------------------------------------------------
 */
 
 router.use(auth);
-router.use(supervisorOrAdmin);
+router.use(adminOnly);
 
 
 router.get(
@@ -38,25 +35,21 @@ router.get(
 
 router.get(
   "/users",
-  adminOnly,
   controller.allUsers
 );
 
 router.post(
   "/users",
-  adminOnly,
   controller.createUser
 );
 
 router.put(
   "/users/:id",
-  adminOnly,
   controller.updateUser
 );
 
 router.delete(
   "/users/:id",
-  adminOnly,
   controller.deleteUser
 );
 

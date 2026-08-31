@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import Layout from "../components/Layout";
+import ConfirmDialog from "../components/ConfirmDialog";
 import api from "../api";
 
 const emptyForm = { name: "", contactName: "", email: "", phone: "", notes: "" };
@@ -18,6 +19,7 @@ export default function Clients() {
   const [createError, setCreateError] = useState("");
 
   const [editingClient, setEditingClient] = useState(null);
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState("");
@@ -82,9 +84,9 @@ export default function Clients() {
   }
 
   async function deleteClient(c) {
-    if (!window.confirm(`Delete client "${c.name}"?`)) return;
     try {
       await api.delete(`/clients/${c.id}`);
+      setConfirmDeleteClient(null);
       load();
     } catch (err) {
       alert(err.response?.data?.message || "Could not delete client");
@@ -134,7 +136,7 @@ export default function Clients() {
                         <button className="btn small secondary" onClick={() => startEdit(c)}>
                           <Pencil size={12} /> Edit
                         </button>
-                        <button className="btn small danger" onClick={() => deleteClient(c)}>
+                        <button className="btn small danger" onClick={() => setConfirmDeleteClient(c)}>
                           <Trash2 size={12} /> Delete
                         </button>
                       </div>
@@ -242,6 +244,15 @@ export default function Clients() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteClient}
+        title="Delete client?"
+        message={confirmDeleteClient ? `Delete client "${confirmDeleteClient.name}"?` : ""}
+        confirmLabel="Delete"
+        onConfirm={() => deleteClient(confirmDeleteClient)}
+        onCancel={() => setConfirmDeleteClient(null)}
+      />
 
     </Layout>
   );

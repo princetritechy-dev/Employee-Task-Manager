@@ -5,26 +5,20 @@ const { Project, User, Task, Client } = require("../models");
 |--------------------------------------------------------------------------
 | Serialize project
 |--------------------------------------------------------------------------
-| Attaches resolved member/supervisor users under "Users"/"Supervisors",
-| and the resolved client under "Client" — while keeping the raw
-| members/supervisors/clientId fields on the object too.
+| Attaches resolved member users under "Users", and the resolved client
+| under "Client" — while keeping the raw members/clientId fields too.
 |--------------------------------------------------------------------------
 */
 
-function serialize(project, users, supervisors = [], client = null) {
+function serialize(project, users, client = null) {
   const json = project.toJSON();
   json.Users = users;
-  json.Supervisors = supervisors;
   json.Client = client;
   return json;
 }
 
 async function loadMembers(project) {
   return User.find({ _id: { $in: project.members } }).select("name email");
-}
-
-async function loadSupervisors(project) {
-  return User.find({ _id: { $in: project.supervisors || [] } }).select("name email");
 }
 
 async function loadClient(project) {
@@ -40,10 +34,6 @@ exports.list = async (req, res) => {
       ...new Set(projects.flatMap((p) => p.members.map((id) => id.toString()))),
     ];
 
-    const supervisorIds = [
-      ...new Set(projects.flatMap((p) => (p.supervisors || []).map((id) => id.toString()))),
-    ];
-
     const clientIds = [
       ...new Set(projects.map((p) => p.clientId).filter(Boolean).map((id) => id.toString())),
     ];
@@ -53,11 +43,6 @@ exports.list = async (req, res) => {
     );
     const usersById = new Map(users.map((u) => [u.id, u.toJSON()]));
 
-    const supervisorUsers = await User.find({ _id: { $in: supervisorIds } }).select(
-      "name email"
-    );
-    const supervisorsById = new Map(supervisorUsers.map((u) => [u.id, u.toJSON()]));
-
     const clients = await Client.find({ _id: { $in: clientIds } });
     const clientsById = new Map(clients.map((c) => [c.id, c.toJSON()]));
 
@@ -65,9 +50,6 @@ exports.list = async (req, res) => {
       serialize(
         project,
         project.members.map((id) => usersById.get(id.toString())).filter(Boolean),
-        (project.supervisors || [])
-          .map((id) => supervisorsById.get(id.toString()))
-          .filter(Boolean),
         project.clientId ? clientsById.get(project.clientId.toString()) || null : null
       )
     );
@@ -80,7 +62,7 @@ exports.list = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { name, clientId, description, status, startDate, endDate, employeeIds = [], supervisorIds = [] } = req.body;
+    const { name, clientId, description, status, startDate, endDate, employeeIds = [] } = req.body;
     if (!name) return res.status(400).json({ message: "Project name is required" });
 
     if (clientId && !mongoose.isValidObjectId(clientId)) {
@@ -91,17 +73,10 @@ exports.create = async (req, res) => {
       ? employeeIds.filter((id) => mongoose.isValidObjectId(id))
       : [];
 
-    const validSupervisorIds = Array.isArray(supervisorIds)
-      ? supervisorIds.filter((id) => mongoose.isValidObjectId(id))
-      : [];
-
     const members =
       req.user.role === "admin" && Array.isArray(employeeIds)
         ? validEmployeeIds
         : [req.user._id];
-
-    const supervisors =
-      req.user.role === "admin" ? validSupervisorIds : [];
 
     const project = await Project.create({
       name,
@@ -111,14 +86,12 @@ exports.create = async (req, res) => {
       startDate,
       endDate,
       members,
-      supervisors,
     });
 
     const users = await loadMembers(project);
-    const supervisorUsers = await loadSupervisors(project);
     const client = await loadClient(project);
 
-    res.status(201).json(serialize(project, users, supervisorUsers, client));
+    res.status(201).json(serialize(project, users, client));
   } catch (error) {
     console.error("Create project error:", error);
     res.status(500).json({ message: error.message });
@@ -134,7 +107,7 @@ exports.update = async (req, res) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    const { name, clientId, description, status, startDate, endDate, employeeIds, supervisorIds, statusColumns } = req.body;
+    const { name, clientId, description, status, startDate, endDate, employeeIds, statusColumns } = req.body;
 
     if (clientId !== undefined && clientId && !mongoose.isValidObjectId(clientId)) {
       return res.status(400).json({ message: "Invalid client" });
@@ -152,10 +125,6 @@ exports.update = async (req, res) => {
 
     if (Array.isArray(employeeIds)) {
       project.members = employeeIds.filter((id) => mongoose.isValidObjectId(id));
-    }
-
-    if (Array.isArray(supervisorIds)) {
-      project.supervisors = supervisorIds.filter((id) => mongoose.isValidObjectId(id));
     }
 
     if (Array.isArray(statusColumns)) {
@@ -207,10 +176,9 @@ exports.update = async (req, res) => {
     await project.save();
 
     const users = await loadMembers(project);
-    const supervisorUsers = await loadSupervisors(project);
     const client = await loadClient(project);
 
-    res.json(serialize(project, users, supervisorUsers, client));
+    res.json(serialize(project, users, client));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -5,37 +5,8 @@ const { User, Task, Project } = require("../models");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
 
-/*
-|--------------------------------------------------------------------------
-| Projects a supervisor manages (null for admin = no restriction)
-|--------------------------------------------------------------------------
-*/
-
-async function managedProjectIds(user) {
-  if (user.role === "admin") return null;
-  const projects = await Project.find({ supervisors: user._id }).select("_id");
-  return projects.map((p) => p._id);
-}
-
 exports.employees = async (req, res) => {
   try {
-    if (req.user.role === "supervisor") {
-      const ids = await managedProjectIds(req.user);
-      const projects = await Project.find({ _id: { $in: ids } }).select("members");
-      const memberIds = [
-        ...new Set(projects.flatMap((p) => p.members.map((id) => id.toString()))),
-      ];
-
-      const users = await User.find({
-        _id: { $in: memberIds },
-        role: "employee",
-      })
-        .select("-password")
-        .sort({ name: 1 });
-
-      return res.json(users);
-    }
-
     const users = await User.find({ role: "employee" })
       .select("-password")
       .sort({ name: 1 });
@@ -49,30 +20,6 @@ exports.employees = async (req, res) => {
 
 exports.dashboard = async (req, res) => {
   try {
-    if (req.user.role === "supervisor") {
-      const ids = await managedProjectIds(req.user);
-
-      const [managedProjects, tasks] = await Promise.all([
-        Project.find({ _id: { $in: ids } }).select("members status"),
-        Task.countDocuments({ projectId: { $in: ids } }),
-      ]);
-
-      const employeeIds = [
-        ...new Set(managedProjects.flatMap((p) => p.members.map((id) => id.toString()))),
-      ];
-
-      const [employees, ongoingProjects] = await Promise.all([
-        User.countDocuments({
-          _id: { $in: employeeIds },
-          role: "employee",
-          status: "active",
-        }),
-        Promise.resolve(managedProjects.filter((p) => p.status === "ongoing").length),
-      ]);
-
-      return res.json({ employees, ongoingProjects, totalTasks: tasks });
-    }
-
     const [employees, projects, tasks] = await Promise.all([
       User.countDocuments({ role: "employee", status: "active" }),
       Project.countDocuments({ status: "ongoing" }),
@@ -88,7 +35,7 @@ exports.dashboard = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| CREATE USER (employee or supervisor) — admin only
+| CREATE USER (employee) — admin only
 |--------------------------------------------------------------------------
 | There's no public registration anymore. This is how everyone except the
 | very first admin gets an account — an admin creates it here. Admin
@@ -99,7 +46,7 @@ exports.dashboard = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, role = "employee" } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -112,12 +59,6 @@ exports.createUser = async (req, res) => {
     if (!EMAIL_RE.test(normalizedEmail)) {
       return res.status(400).json({
         message: "Enter a valid email address",
-      });
-    }
-
-    if (!["employee", "supervisor"].includes(role)) {
-      return res.status(400).json({
-        message: "Role must be employee or supervisor",
       });
     }
 
@@ -142,7 +83,7 @@ exports.createUser = async (req, res) => {
       name: String(name).trim(),
       email: normalizedEmail,
       password: passwordHash,
-      role,
+      role: "employee",
       status: "active",
     });
 
@@ -167,17 +108,16 @@ exports.createUser = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| LIST ALL USERS (employees + supervisors) — admin only
+| LIST ALL USERS (employees) — admin only
 |--------------------------------------------------------------------------
-| Separate from exports.employees, which only returns employees (and is
-| scoped for supervisors). This is for the admin's user-management view,
-| where they need to see and manage supervisors too.
+| Separate from exports.employees so the admin's user-management view has
+| its own endpoint, independent of anything else that reads employees.
 |--------------------------------------------------------------------------
 */
 
 exports.allUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: { $in: ["employee", "supervisor"] } })
+    const users = await User.find({ role: "employee" })
       .select("-password")
       .sort({ name: 1 });
 
@@ -190,12 +130,11 @@ exports.allUsers = async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| UPDATE USER (name/email/role/status) — admin only
+| UPDATE USER (name/email/status) — admin only
 |--------------------------------------------------------------------------
-| Used to change an employee to a supervisor (or back), rename/deactivate
-| an account, etc. Can't be used to touch admin accounts — those aren't
-| managed through the app at all (see scripts/createAdmin.js), and an
-| admin can't demote/deactivate themselves by accident through this.
+| Can't be used to touch admin accounts — those aren't managed through
+| the app at all (see scripts/createAdmin.js), and an admin can't
+| deactivate themselves by accident through this.
 |--------------------------------------------------------------------------
 */
 
@@ -213,7 +152,7 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { name, email, role, status } = req.body;
+    const { name, email, status } = req.body;
 
     if (name !== undefined) {
       const trimmed = String(name).trim();
@@ -237,13 +176,6 @@ exports.updateUser = async (req, res) => {
         }
         user.email = normalizedEmail;
       }
-    }
-
-    if (role !== undefined) {
-      if (!["employee", "supervisor"].includes(role)) {
-        return res.status(400).json({ message: "Role must be employee or supervisor" });
-      }
-      user.role = role;
     }
 
     if (status !== undefined) {
@@ -278,10 +210,9 @@ exports.updateUser = async (req, res) => {
 |--------------------------------------------------------------------------
 | DELETE USER — admin only
 |--------------------------------------------------------------------------
-| Blocked if the user still owns any tasks (same spirit as "a project
-| can't be deleted while it has tasks") — force reassigning/cleaning up
-| their work first rather than silently orphaning it. Also cleans up any
-| project membership/supervisor references so nothing dangles.
+| Blocked if the user still owns any tasks — force reassigning/cleaning
+| up their work first rather than silently orphaning it. Also cleans up
+| any project membership references so nothing dangles.
 |--------------------------------------------------------------------------
 */
 
@@ -314,7 +245,7 @@ exports.deleteUser = async (req, res) => {
     await Promise.all([
       Project.updateMany(
         {},
-        { $pull: { members: user._id, supervisors: user._id } }
+        { $pull: { members: user._id } }
       ),
       Task.updateMany(
         { assigneeIds: user._id },

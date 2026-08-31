@@ -1,37 +1,6 @@
 const mongoose = require("mongoose");
 const { Task, Project, User, TaskComment } = require("../models");
 
-/*
-|--------------------------------------------------------------------------
-| Can this user manage (see/edit/lock/move any task in) this project?
-|--------------------------------------------------------------------------
-| True for admins always. True for supervisors ONLY if an admin has
-| specifically assigned them to this project's supervisors list.
-| Everyone else falls back to ownership-only rules wherever this is used.
-|--------------------------------------------------------------------------
-*/
-
-function canManageProject(user, project) {
-  if (!user || !project) return false;
-  if (user.role === "admin") return true;
-  if (user.role !== "supervisor") return false;
-  return (project.supervisors || []).some(
-    (id) => String(id) === String(user._id)
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Every project a supervisor manages (for scoping list-style queries)
-|--------------------------------------------------------------------------
-*/
-
-async function managedProjectIds(user) {
-  if (user.role === "admin") return null; // null = no restriction
-  const projects = await Project.find({ supervisors: user._id }).select("_id");
-  return projects.map((p) => p._id);
-}
-
 
 /*
 |--------------------------------------------------------------------------
@@ -596,7 +565,7 @@ exports.create = async (req, res) => {
       }
     }
 
-    if (forUserId && canManageProject(req.user, project)) {
+    if (forUserId && req.user.role === "admin") {
       if (!isValidId(forUserId)) {
         return res.status(400).json({ message: "Invalid employee" });
       }
@@ -613,7 +582,7 @@ exports.create = async (req, res) => {
 
     const normalizedAssigneeIds = normalizeIdList(assigneeIds) || [];
 
-    if (canManageProject(req.user, project)) {
+    if (req.user.role === "admin") {
       normalizedAssigneeIds.forEach(ensureProjectMember);
     }
 
@@ -1558,18 +1527,16 @@ exports.update = async (
     if (nextAssignees !== undefined) {
       task.assigneeIds = nextAssignees;
 
-      if (["admin", "supervisor"].includes(req.user.role)) {
-        const project = await Project.findById(task.projectId);
-        if (project && canManageProject(req.user, project)) {
-          const before = (project.members || []).length;
-          nextAssignees.forEach((userId) => {
-            const already = (project.members || []).some(
-              (m) => String(m) === String(userId)
-            );
-            if (!already) project.members.push(userId);
-          });
-          if (project.members.length !== before) await project.save();
-        }
+      const project = await Project.findById(task.projectId);
+      if (project) {
+        const before = (project.members || []).length;
+        nextAssignees.forEach((userId) => {
+          const already = (project.members || []).some(
+            (m) => String(m) === String(userId)
+          );
+          if (!already) project.members.push(userId);
+        });
+        if (project.members.length !== before) await project.save();
       }
     }
 
@@ -1898,25 +1865,6 @@ exports.adminTasks = async (
 
     /*
     |--------------------------------------------------------------------------
-    | Supervisor scoping — only their managed projects, not the whole company
-    |--------------------------------------------------------------------------
-    */
-
-    if (req.user.role === "supervisor") {
-      const ids = await managedProjectIds(req.user);
-
-      if (where.projectId) {
-        const allowed = ids.some((id) => String(id) === String(where.projectId));
-        if (!allowed) {
-          return res.json([]);
-        }
-      } else {
-        where.projectId = { $in: ids };
-      }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
     | Fetch tasks
     |--------------------------------------------------------------------------
     */
@@ -2233,26 +2181,6 @@ exports.employeeSummary = async (
           "Employee not found",
       });
 
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Supervisor scoping — only employees on a project they manage
-    |--------------------------------------------------------------------------
-    */
-
-    if (req.user.role === "supervisor") {
-      const ids = await managedProjectIds(req.user);
-      const isOnManagedProject = await Project.exists({
-        _id: { $in: ids },
-        members: employee._id,
-      });
-
-      if (!isOnManagedProject) {
-        return res.status(403).json({
-          message: "This employee isn't on a project you manage",
-        });
-      }
     }
 
     /*
@@ -2575,15 +2503,6 @@ exports.lockTask = async (req, res) => {
       });
     }
 
-    if (req.user.role !== "admin") {
-      const project = await Project.findById(task.projectId);
-      if (!canManageProject(req.user, project)) {
-        return res.status(403).json({
-          message: "You don't manage this project",
-        });
-      }
-    }
-
     if (
       task.lockedUntil &&
       new Date() > new Date(task.lockedUntil)
@@ -2648,15 +2567,6 @@ exports.unlockTask = async (req, res) => {
       return res.status(404).json({
         message: "Task not found",
       });
-    }
-
-    if (req.user.role !== "admin") {
-      const project = await Project.findById(task.projectId);
-      if (!canManageProject(req.user, project)) {
-        return res.status(403).json({
-          message: "You don't manage this project",
-        });
-      }
     }
 
     /*
@@ -3007,7 +2917,7 @@ exports.projectTasks = async (req, res) => {
       (m) => String(m) === String(req.user._id)
     );
 
-    const manages = canManageProject(req.user, project);
+    const manages = req.user.role === "admin";
 
     if (!manages && !isMember) {
       return res.status(403).json({
@@ -3019,9 +2929,8 @@ exports.projectTasks = async (req, res) => {
     |--------------------------------------------------------------------------
     | Visibility
     |--------------------------------------------------------------------------
-    | Admins and the project's assigned supervisors see every task in the
-    | project. Everyone else only sees tasks they own or are assigned to —
-    | not their teammates' tasks.
+    | Admins see every task in the project. Everyone else only sees tasks
+    | they own or are assigned to — not their teammates' tasks.
     |--------------------------------------------------------------------------
     */
 
@@ -3146,9 +3055,7 @@ exports.moveTask = async (req, res) => {
     |--------------------------------------------------------------------------
     | Find task
     |--------------------------------------------------------------------------
-    | Admins move anything. Supervisors move anything in a project they're
-    | assigned to supervise (or their own tasks anywhere). Everyone else
-    | can only move their own tasks.
+    | Admins move anything. Everyone else can only move their own tasks.
     |--------------------------------------------------------------------------
     */
 
@@ -3156,17 +3063,6 @@ exports.moveTask = async (req, res) => {
 
     if (req.user.role === "admin") {
       task = await Task.findById(taskId);
-    } else if (req.user.role === "supervisor") {
-      const owned = await Task.findOne({ _id: taskId, userId: req.user._id });
-      if (owned) {
-        task = owned;
-      } else {
-        const candidate = await Task.findById(taskId);
-        if (candidate) {
-          const candidateProject = await Project.findById(candidate.projectId);
-          if (canManageProject(req.user, candidateProject)) task = candidate;
-        }
-      }
     } else {
       task = await Task.findOne({ _id: taskId, userId: req.user._id });
     }
@@ -3256,7 +3152,7 @@ exports.moveTask = async (req, res) => {
 | Body: { minutes } — a positive whole number. Adds to timeSpent (doesn't
 | touch startedAt/completedAt/status — this is separate from the timer
 | that runs when a task is "in progress"). Allowed for the task's owner,
-| or an admin/supervisor who manages that project.
+| or an admin.
 |--------------------------------------------------------------------------
 */
 
@@ -3280,17 +3176,6 @@ exports.logTime = async (req, res) => {
 
     if (req.user.role === "admin") {
       task = await Task.findById(taskId);
-    } else if (req.user.role === "supervisor") {
-      const owned = await Task.findOne({ _id: taskId, userId: req.user._id });
-      if (owned) {
-        task = owned;
-      } else {
-        const candidate = await Task.findById(taskId);
-        if (candidate) {
-          const project = await Project.findById(candidate.projectId);
-          if (canManageProject(req.user, project)) task = candidate;
-        }
-      }
     } else {
       task = await Task.findOne({ _id: taskId, userId: req.user._id });
     }

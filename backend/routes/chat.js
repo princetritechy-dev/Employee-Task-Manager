@@ -7,7 +7,7 @@ const controller = require("../controllers/chatController");
 |--------------------------------------------------------------------------
 | CHAT ROUTES
 |--------------------------------------------------------------------------
-| Any authenticated, active user — admin, supervisor, or employee — can
+| Any authenticated, active user — admin or employee — can
 | use chat. There's no role restriction here on purpose: everyone should
 | be able to reach the Team Room and message anyone else directly.
 |--------------------------------------------------------------------------

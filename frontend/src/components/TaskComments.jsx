@@ -13,6 +13,7 @@ import {
   Undo,
 } from "lucide-react";
 import api from "../api";
+import ConfirmDialog from "./ConfirmDialog";
 
 const ACTIVITY_ICON = {
   created: PlusCircle,
@@ -25,12 +26,13 @@ const ACTIVITY_ICON = {
 };
 
 export default function TaskComments({ taskId, currentUserId, currentUserRole, task }) {
-  const canSeeActivity = ["admin", "supervisor"].includes(currentUserRole);
+  const canSeeActivity = currentUserRole === "admin";
   const [tab, setTab] = useState("comments");
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const activity = [...(task?.activity || [])].sort(
     (a, b) => new Date(b.at) - new Date(a.at)
@@ -75,9 +77,9 @@ export default function TaskComments({ taskId, currentUserId, currentUserRole, t
   }
 
   async function remove(id) {
-    if (!confirm("Delete this comment?")) return;
     try {
       await api.delete(`/comments/${id}`);
+      setConfirmDeleteId(null);
       await load();
     } catch (err) {
       alert(err.response?.data?.message || "Could not delete comment");
@@ -126,7 +128,7 @@ export default function TaskComments({ taskId, currentUserId, currentUserRole, t
                   <p>{item.comment}</p>
 
                   {(currentUserRole === "admin" || item.Admin?.id === currentUserId) && (
-                    <button className="btn danger small" onClick={() => remove(item.id)}>
+                    <button className="btn danger small" onClick={() => setConfirmDeleteId(item.id)}>
                       <Trash2 size={12} /> Delete
                     </button>
                   )}
@@ -171,6 +173,14 @@ export default function TaskComments({ taskId, currentUserId, currentUserRole, t
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Delete comment?"
+        confirmLabel="Delete"
+        onConfirm={() => remove(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }
