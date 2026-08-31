@@ -2056,6 +2056,7 @@ form.card .btn {
   margin-bottom: 6px;
 }
 
+.project-title h1,
 .project-title h2 {
   margin: 0;
   transition: color 0.15s;
@@ -2063,6 +2064,8 @@ form.card .btn {
 
 .badge {
   display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
