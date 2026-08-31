@@ -3125,3 +3125,18 @@ form.card .btn {
   display: flex;
   gap: 10px;
 }
+
+/* =====================================================
+   INLINE FIELD VALIDATION
+===================================================== */
+
+.field-invalid {
+  border-color: var(--red) !important;
+}
+
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--red);
+  font-size: 12px;
+}

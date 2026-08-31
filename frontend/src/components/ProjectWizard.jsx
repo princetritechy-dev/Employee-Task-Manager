@@ -18,14 +18,27 @@ const emptyForm = {
   employeeIds: [],
 };
 
-export default function ProjectWizard({ clients, employees, onClose, onCreated }) {
+export default function ProjectWizard({ clients, employees, project, onClose, onCreated }) {
+  const isEdit = !!project;
+
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() =>
+    isEdit
+      ? {
+          name: project.name || "",
+          clientId: project.clientId || "",
+          status: project.status || "ongoing",
+          description: project.description || "",
+          startDate: project.startDate || "",
+          endDate: project.endDate || "",
+          employeeIds: (project.Users || []).map((u) => u.id),
+        }
+      : emptyForm
+  );
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
-
-  const canCreate = form.name.trim().length > 0;
 
   const filteredEmployees = employees.filter((e) =>
     `${e.name} ${e.email}`.toLowerCase().includes(search.toLowerCase())
@@ -40,10 +53,45 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
     }));
   }
 
-  async function create() {
-    if (!canCreate) {
-      setError("Project name is required");
-      setStep(1);
+  /*
+  |------------------------------------------------------------------------
+  | Validation
+  |------------------------------------------------------------------------
+  | Checks every field regardless of which step you're currently on, so
+  | Create/Save always catches everything — not just whatever step happens
+  | to be showing. Returns the first invalid step so we can jump there.
+  |------------------------------------------------------------------------
+  */
+
+  function validate() {
+    const errs = {};
+
+    const trimmedName = form.name.trim();
+    if (!trimmedName) {
+      errs.name = "Project name is required";
+    } else if (trimmedName.length > 160) {
+      errs.name = "Project name must be 160 characters or fewer";
+    }
+
+    setFieldErrors(errs);
+
+    if (errs.name) return { valid: false, step: 1 };
+    return { valid: true };
+  }
+
+  function goNext() {
+    if (step === 1) {
+      const result = validate();
+      if (!result.valid && result.step === 1) return;
+    }
+    setStep(step + 1);
+  }
+
+  async function save() {
+    const result = validate();
+
+    if (!result.valid) {
+      setStep(result.step);
       return;
     }
 
@@ -51,10 +99,14 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
     setSaving(true);
 
     try {
-      await api.post("/projects", form);
+      if (isEdit) {
+        await api.put(`/projects/${project.id}`, form);
+      } else {
+        await api.post("/projects", form);
+      }
       onCreated?.();
     } catch (err) {
-      setError(err.response?.data?.message || "Could not create project");
+      setError(err.response?.data?.message || `Could not ${isEdit ? "update" : "create"} project`);
     } finally {
       setSaving(false);
     }
@@ -68,7 +120,7 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
           <X size={16} />
         </button>
 
-        <h2 className="wizard-title">Create a Project</h2>
+        <h2 className="wizard-title">{isEdit ? "Edit Project" : "Create a Project"}</h2>
 
         <div className="wizard-stepper">
           {STEPS.map((s, i) => (
@@ -103,10 +155,15 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
                   <label>Project name *</label>
                   <input
                     autoFocus
+                    className={fieldErrors.name ? "field-invalid" : ""}
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, name: e.target.value });
+                      if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: undefined });
+                    }}
                     placeholder="e.g. Acme Website Redesign"
                   />
+                  {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
                 </div>
                 <div>
                   <label>Client / Company</label>
@@ -205,7 +262,9 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
               </div>
 
               <p className="muted small-note">
-                You can fine-tune status columns, tags, and more after the project is created.
+                {isEdit
+                  ? "Status columns, tags, and more can be fine-tuned from the project page."
+                  : "You can fine-tune status columns, tags, and more after the project is created."}
               </p>
             </>
           )}
@@ -227,14 +286,16 @@ export default function ProjectWizard({ clients, employees, onClose, onCreated }
             <button
               type="button"
               className="btn secondary"
-              onClick={create}
-              disabled={!canCreate || saving}
+              onClick={save}
+              disabled={saving}
             >
-              {saving ? "Creating..." : "Create Project"}
+              {saving
+                ? (isEdit ? "Saving..." : "Creating...")
+                : (isEdit ? "Save Changes" : "Create Project")}
             </button>
 
             {step < STEPS.length && (
-              <button type="button" className="btn" onClick={() => setStep(step + 1)}>
+              <button type="button" className="btn" onClick={goNext}>
                 Next step
               </button>
             )}
