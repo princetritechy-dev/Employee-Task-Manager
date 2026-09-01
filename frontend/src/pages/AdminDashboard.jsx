@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Lock, Unlock, Download, FileText, List, Kanban, CalendarRange, Plus } from "lucide-react";
+import { Lock, Unlock, Download, FileText, List, Kanban, CalendarRange, Plus, MessageSquare } from "lucide-react";
 import Layout from "../components/Layout";
 import TaskBoard from "../components/TaskBoard";
 import TaskCalendar from "../components/TaskCalendar";
@@ -981,8 +981,9 @@ export default function AdminDashboard() {
                           openComments(task)
                         }
                       >
-                        💬 Comment
-                      </button>
+                        <MessageSquare size={12} />
+                      Comments
+                  </button>
 
                       {isAdmin && (
                         <button

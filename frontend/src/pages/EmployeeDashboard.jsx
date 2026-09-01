@@ -81,7 +81,7 @@ export default function EmployeeDashboard() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Could not load tasks"
+        "Could not load tasks"
       );
     }
   }
@@ -305,7 +305,7 @@ export default function EmployeeDashboard() {
           TASKS
       ===================================================== */}
 
-{/* =====================================================
+      {/* =====================================================
     TASKS
 ===================================================== */}
 
@@ -454,228 +454,235 @@ export default function EmployeeDashboard() {
         ===================================================== */}
 
         {view === "list" && (
-        <div className="table-wrap">
+          <div className="table-wrap">
 
-          <table>
+            <table>
 
-            <thead>
-
-              <tr>
-                <th>Date</th>
-                <th>Project</th>
-                <th>Task</th>
-                <th>Assigned By</th>
-                <th>Time</th>
-                <th>Lock</th>
-                <th>Action</th>
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              {filteredTasks.map((task) => (
-
-                <tr key={task.id}>
-
-                  <td>
-                    {task.taskDate}
-                  </td>
-
-
-                  <td>
-                    {task.Project?.name || "-"}
-                  </td>
-
-
-                  <td>
-
-                    <div
-                      className="task-title-row"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => openEdit(task)}
-                    >
-                      <span className={`priority-dot priority-${task.priority || "medium"}`} title={`${task.priority || "medium"} priority`} />
-                      <strong>
-                        {task.taskTitle}
-                      </strong>
-                    </div>
-
-                    <br />
-
-                    <small>
-                      {task.description}
-                    </small>
-
-                    {(task.dueDate || task.tags?.length > 0 || task.subtasks?.length > 0) && (
-                      <div className="task-meta-row">
-                        {task.dueDate && (
-                          <span className="meta-chip">Due {task.dueDate}</span>
-                        )}
-                        {task.subtasks?.length > 0 && (
-                          <span className="meta-chip">
-                            {task.subtasks.filter((s) => s.completed).length}/
-                            {task.subtasks.length} subtasks
-                          </span>
-                        )}
-                        {task.tags?.map((tag) => (
-                          <span className="tag-chip small" key={tag}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-
-                    {/* ADMIN COMMENTS */}
-                    {task.Comments?.length > 0 && (
-                      <div className="task-comments">
-
-                        <strong>
-                          Admin Comments:
-                        </strong>
-
-
-                        {task.Comments.map((comment)=>(
-                          <div 
-                            key={comment.id}
-                            className="comment-box"
-                          >
-
-                            <p>
-                              {comment.comment}
-                            </p>
-
-                            <small>
-                              By: {comment.Admin?.name || "Admin"}
-                            </small>
-
-                          </div>
-                        ))}
-
-                      </div>
-                    )}
-
-                  </td>
-
-
-                  <td>
-                    {task.assignedBy || "-"}
-                  </td>
-
-
-                  <td>
-                    {hours(task.timeSpent)}
-                  </td>
-
-                  <td>
-
-                    <div
-                      className={`lock-status ${
-                        task.isLocked
-                          ? "locked"
-                          : "unlocked"
-                      }`}
-                    >
-
-                      {task.isLocked ? (
-                        <>
-                          <Lock size={14} />
-
-                          <div>
-
-                            <strong>
-                              Locked
-                            </strong>
-
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Unlock size={14} />
-
-                          <div>
-
-                            <strong>
-                              Editable
-                            </strong>
-
-                            <span>
-                              Available
-                            </span>
-
-                          </div>
-                        </>
-                      )}
-
-                    </div>
-
-                  </td>
-
-
-                  <td className="task-actions">
-
-                    <button
-                      className="edit-btn"
-                      onClick={() => openEdit(task)}
-                    >
-                      View
-                    </button>
-
-                    <button
-                      className="btn small secondary"
-                      onClick={() => openEdit(task)}
-                    >
-                      <MessageSquare size={12} /> Comments
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              ))}
-
-
-              {!filteredTasks.length && (
+              <thead>
 
                 <tr>
-
-                  <td
-                    colSpan="7"
-                    className="empty"
-                  >
-                    {tasks.length ? "No tasks match your filters." : "No tasks yet."}
-                  </td>
-
+                  <th>Date</th>
+                  <th>Project</th>
+                  <th>Task</th>
+                  <th>Assigned By</th>
+                  <th>Time</th>
+                  <th>Lock</th>
+                  <th>Action</th>
                 </tr>
 
-              )}
+              </thead>
 
-            </tbody>
 
-          </table>
+              <tbody>
 
-        </div>
+                {filteredTasks.map((task) => (
+
+                  <tr key={task.id}>
+
+                    <td>
+                      {task.taskDate}
+                    </td>
+
+
+                    <td>
+                      {task.Project?.name || "-"}
+                    </td>
+
+
+                    <td>
+
+                      <div
+                        className="task-title-row"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => openEdit(task)}
+                      >
+                        <span className={`priority-dot priority-${task.priority || "medium"}`} title={`${task.priority || "medium"} priority`} />
+                        <strong>
+                          {task.taskTitle}
+                        </strong>
+                      </div>
+
+                      <br />
+
+                      <small>
+                        {task.description}
+                      </small>
+
+                      {(task.dueDate || task.tags?.length > 0 || task.subtasks?.length > 0) && (
+                        <div className="task-meta-row">
+                          {task.dueDate && (
+                            <span className="meta-chip">Due {task.dueDate}</span>
+                          )}
+                          {task.subtasks?.length > 0 && (
+                            <span className="meta-chip">
+                              {task.subtasks.filter((s) => s.completed).length}/
+                              {task.subtasks.length} subtasks
+                            </span>
+                          )}
+                          {task.tags?.map((tag) => (
+                            <span className="tag-chip small" key={tag}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+
+                      {/* ADMIN COMMENTS */}
+                      {task.Comments?.length > 0 && (
+                        <div className="task-comments">
+
+                          <strong>
+                            Admin Comments:
+                          </strong>
+
+
+                          {task.Comments.map((comment) => (
+                            <div
+                              key={comment.id}
+                              className="comment-box"
+                            >
+
+                              <p>
+                                {comment.comment}
+                              </p>
+
+                              <small>
+                                By: {comment.Admin?.name || "Admin"}
+                              </small>
+
+                            </div>
+                          ))}
+
+                        </div>
+                      )}
+
+                    </td>
+
+
+                    <td>
+                      {task.assignedBy || "-"}
+                    </td>
+
+
+                    <td>
+                      {hours(task.timeSpent)}
+                    </td>
+
+                    <td>
+
+                      <div
+                        className={`lock-status ${task.isLocked
+                            ? "locked"
+                            : "unlocked"
+                          }`}
+                      >
+
+                        {task.isLocked ? (
+                          <>
+                            <Lock size={14} />
+
+                            <div>
+
+                              <strong>
+                                Locked
+                              </strong>
+
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock size={14} />
+
+                            <div>
+
+                              <strong>
+                                Editable
+                              </strong>
+
+                              <span>
+                                Available
+                              </span>
+
+                            </div>
+                          </>
+                        )}
+
+                      </div>
+
+                    </td>
+
+
+                    <td className="task-actions">
+                      <button
+                        className="edit-btn"
+                        onClick={() => openEdit(task)}
+                      >
+                        View
+                      </button>
+
+                      {!task.isLocked && (
+                        <button
+                          className="btn small"
+                          onClick={() => openEdit(task)}
+                        >
+                          Edit Task
+                        </button>
+                      )}
+
+                      <button
+                        className="btn small secondary"
+                        onClick={() => openEdit(task)}
+                      >
+                        <MessageSquare size={12} />
+                        Comments
+                      </button>
+                    </td>
+
+                  </tr>
+
+                ))}
+
+
+                {!filteredTasks.length && (
+
+                  <tr>
+
+                    <td
+                      colSpan="7"
+                      className="empty"
+                    >
+                      {tasks.length ? "No tasks match your filters." : "No tasks yet."}
+                    </td>
+
+                  </tr>
+
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
         )}
 
       </div>
 
-{showEditModal && (
-  <TaskDetail
-    task={editingTask}
-    currentUser={currentUser}
-    onSaved={() => {
-      load();
-      setShowEditModal(false);
-      setEditingTask(null);
-    }}
-    onClose={() => {
-      setShowEditModal(false);
-      setEditingTask(null);
-    }}
-  />
-)}
+      {showEditModal && (
+        <TaskDetail
+          task={editingTask}
+          currentUser={currentUser}
+          onSaved={() => {
+            load();
+            setShowEditModal(false);
+            setEditingTask(null);
+          }}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingTask(null);
+          }}
+        />
+      )}
 
     </Layout>
   );

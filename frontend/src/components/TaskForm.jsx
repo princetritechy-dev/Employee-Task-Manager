@@ -50,7 +50,10 @@ export default function TaskForm({   onSaved,
   const [dependencyOptions, setDependencyOptions] = useState([]);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user") || "null");
-  const readOnly = !!editingTask && currentUser?.role !== "admin";
+  const readOnly =
+  !!editingTask &&
+  currentUser?.role !== "admin" &&
+  editingTask.isLocked;
 
   const [form, setForm] = useState(() => ({
     ...emptyForm(),
