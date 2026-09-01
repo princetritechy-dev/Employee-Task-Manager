@@ -1,21 +1,5 @@
 import React from "react";
 
-/*
-|--------------------------------------------------------------------------
-| ConfirmDialog — replaces window.confirm() everywhere
-|--------------------------------------------------------------------------
-| Usage:
-|   const [confirming, setConfirming] = useState(null); // holds context data or null
-|   <ConfirmDialog
-|     open={!!confirming}
-|     title="Delete this task?"
-|     message="This can't be undone."
-|     onConfirm={() => { doTheThing(confirming); setConfirming(null); }}
-|     onCancel={() => setConfirming(null)}
-|   />
-|--------------------------------------------------------------------------
-*/
-
 export default function ConfirmDialog({
   open,
   title = "Are you sure?",

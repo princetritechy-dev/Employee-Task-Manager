@@ -77,10 +77,10 @@ export default function Login() {
         <div className="login-brand-content">
 
           <div className="login-logo">
-            TM
+            TW
           </div>
 
-          <h1>Task Manager</h1>
+          <h1>TriTechy Workhub</h1>
 
           <p className="login-brand-description">
             Manage your team's work, track time,

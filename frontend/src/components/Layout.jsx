@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderKanban,
   ShieldCheck,
+  Users as UsersIcon,
   LogOut,
   UserCircle,
   Menu,
@@ -12,9 +13,11 @@ import {
   Bell,
   MessageCircle,
   Building2,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
 import ChatWidget from "./ChatWidget";
+import GlobalSearch from "./GlobalSearch";
 
 export default function Layout({ children, title }) {
   const navigate = useNavigate();
@@ -24,11 +27,24 @@ export default function Layout({ children, title }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   function logout() {
     sessionStorage.clear();
     navigate("/login");
   }
+
+  // ⌘K / Ctrl+K opens global search from anywhere in the app.
+  useEffect(() => {
+    function onKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
 const navItems = [];
 
@@ -60,9 +76,15 @@ navItems.push({
 
 if (user?.role === "admin") {
   navItems.push({
-    label: "Admin",
+    label: "Dashboard",
     path: "/admin",
     icon: ShieldCheck,
+  });
+
+  navItems.push({
+    label: "Users",
+    path: "/admin/users",
+    icon: UsersIcon,
   });
 }
 
@@ -168,6 +190,12 @@ if (user?.role === "admin") {
             <h1>{title}</h1>
           </div>
 
+          <button className="topbar-search" onClick={() => setSearchOpen(true)}>
+            <Search size={15} />
+            <span>Search</span>
+            <kbd>⌘K</kbd>
+          </button>
+
           <div className="topbar-user">
             <button
               className="topbar-icon-btn"
@@ -207,6 +235,8 @@ if (user?.role === "admin") {
         onClose={() => setChatOpen(false)}
         onUnreadChange={setUnreadCount}
       />
+
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

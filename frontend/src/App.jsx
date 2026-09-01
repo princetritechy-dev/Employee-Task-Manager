@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Clients from "./pages/Clients";
+import Users from "./pages/Users";
 import MyWork from "./pages/MyWork";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -152,6 +153,15 @@ export default function App() {
         element={
           <RequireAdmin>
             <AdminDashboard />
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path="/admin/users"
+        element={
+          <RequireAdmin>
+            <Users />
           </RequireAdmin>
         }
       />
