@@ -93,10 +93,10 @@ export default function Register() {
         <div className="register-brand-content">
 
           <div className="register-logo">
-            TW
+            TD
           </div>
 
-          <h1>TriTechy Workhub</h1>
+          <h1>TriTechy DevHub</h1>
 
           <p className="register-brand-description">
             Create your account and start managing
