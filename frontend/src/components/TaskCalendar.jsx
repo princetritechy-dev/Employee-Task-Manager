@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import AvatarDisplay from "./AvatarDisplay";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -104,9 +105,12 @@ export default function TaskCalendar({ tasks, onEdit, mode = "employee" }) {
                     title={task.taskTitle}
                   >
                     {mode !== "employee" && task.Employee?.name && (
-                      <span className="calendar-task-avatar">
-                        {task.Employee.name.charAt(0).toUpperCase()}
-                      </span>
+                      <AvatarDisplay
+                        avatarId={task.Employee.avatarId}
+                        name={task.Employee.name}
+                        size={13}
+                        className="calendar-task-avatar"
+                      />
                     )}
                     {task.taskTitle}
                   </div>

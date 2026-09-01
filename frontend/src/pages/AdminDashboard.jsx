@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Lock, Unlock, Download, FileText, List, Kanban, CalendarRange, Plus, MessageSquare } from "lucide-react";
+import { Lock, Unlock, Download, FileText, List, Kanban, CalendarRange, Plus } from "lucide-react";
 import Layout from "../components/Layout";
 import TaskBoard from "../components/TaskBoard";
 import TaskCalendar from "../components/TaskCalendar";
 import TaskDetail from "../components/TaskDetail";
 import ConfirmDialog from "../components/ConfirmDialog";
+import AvatarDisplay from "../components/AvatarDisplay";
 import api from "../api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -26,10 +27,10 @@ export default function AdminDashboard() {
   const [filters, setFilters] = useState({
     employeeId: "",
     projectId: "",
-    date: "",
+    startDate: "",
+    endDate: "",
   });
 
-  const [employeeSummary, setEmployeeSummary] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [view, setView] = useState("list");
@@ -83,17 +84,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadTasks();
 
-    // Keep this dashboard live — pick up task changes made by employees
-    // (or another admin tab) without needing a manual reload. Rebuilding
-    // this on [filters] (not just once) keeps polling honoring whatever
-    // filters are currently selected, instead of a stale initial set.
     const interval = setInterval(loadTasks, 6000);
     return () => clearInterval(interval);
   }, [filters]);
-
-  /* =========================================================
-     UNLOCK TASK (admin override)
-  ========================================================= */
 
   async function unlockTask(taskId) {
     try {
@@ -137,33 +130,12 @@ export default function AdminDashboard() {
     }
   }
 
-  async function selectEmployee(id) {
+  function selectEmployee(id) {
     setFilters({
       ...filters,
       employeeId: id,
     });
-
-    if (id) {
-      try {
-        const r = await api.get(
-          `/tasks/admin/employee/${id}/summary`
-        );
-
-        setEmployeeSummary(r.data);
-      } catch (error) {
-        console.error(
-          "Could not load employee summary",
-          error
-        );
-      }
-    } else {
-      setEmployeeSummary(null);
-    }
   }
-
-  /* =========================================================
-     CSV EXPORT
-  ========================================================= */
 
   function exportCSV() {
     if (!tasks.length) {
@@ -236,7 +208,9 @@ export default function AdminDashboard() {
     link.href = url;
 
     const datePart =
-      filters.date || "all-dates";
+      filters.startDate && filters.endDate
+        ? `${filters.startDate}_to_${filters.endDate}`
+        : filters.startDate || filters.endDate || "all-dates";
 
     link.download = `task-manager-${datePart}.csv`;
 
@@ -247,10 +221,6 @@ export default function AdminDashboard() {
 
     URL.revokeObjectURL(url);
   }
-
-  /* =========================================================
-     PDF EXPORT
-  ========================================================= */
 
   function exportPDF() {
     if (!tasks.length) {
@@ -299,9 +269,11 @@ export default function AdminDashboard() {
       );
     }
 
-    if (filters.date) {
+    if (filters.startDate || filters.endDate) {
       filterParts.push(
-        `Date: ${filters.date}`
+        filters.startDate && filters.endDate
+          ? `Date: ${filters.startDate} to ${filters.endDate}`
+          : `Date: ${filters.startDate || filters.endDate}`
       );
     }
 
@@ -387,16 +359,14 @@ export default function AdminDashboard() {
     });
 
     const datePart =
-      filters.date || "all-dates";
+      filters.startDate && filters.endDate
+        ? `${filters.startDate}_to_${filters.endDate}`
+        : filters.startDate || filters.endDate || "all-dates";
 
     doc.save(
       `task-manager-${datePart}.pdf`
     );
   }
-
-  /* =========================================================
-     COMMENTS
-  ========================================================= */
 
   const allTags = useMemo(() => {
     const set = new Set();
@@ -427,10 +397,6 @@ export default function AdminDashboard() {
   return (
     <Layout title="Admin Dashboard">
 
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
       <div className="page-head">
 
         <div>
@@ -453,10 +419,6 @@ export default function AdminDashboard() {
 
       </div>
 
-
-      {/* =====================================================
-          MAIN STATS
-      ===================================================== */}
 
       <div className="stats">
 
@@ -483,57 +445,6 @@ export default function AdminDashboard() {
 
       </div>
 
-
-      {/* =====================================================
-          EMPLOYEE SUMMARY
-      ===================================================== */}
-
-      {employeeSummary && (
-        <div className="stats">
-
-          <div className="stat">
-            <span>
-              Selected employee today
-            </span>
-
-            <strong>
-              {hours(
-                employeeSummary.todayMinutes
-              )}
-            </strong>
-          </div>
-
-          <div className="stat">
-            <span>
-              Selected employee 7 days
-            </span>
-
-            <strong>
-              {hours(
-                employeeSummary.weekMinutes
-              )}
-            </strong>
-          </div>
-
-          <div className="stat">
-            <span>
-              Selected employee month
-            </span>
-
-            <strong>
-              {hours(
-                employeeSummary.monthMinutes
-              )}
-            </strong>
-          </div>
-
-        </div>
-      )}
-
-
-      {/* =====================================================
-          FILTERS
-      ===================================================== */}
 
       <div className="card">
 
@@ -588,11 +499,25 @@ export default function AdminDashboard() {
 
           <input
             type="date"
-            value={filters.date}
+            title="From date"
+            value={filters.startDate}
             onChange={(e) =>
               setFilters({
                 ...filters,
-                date: e.target.value,
+                startDate: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="date"
+            title="To date"
+            value={filters.endDate}
+            min={filters.startDate || undefined}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                endDate: e.target.value,
               })
             }
           />
@@ -604,10 +529,9 @@ export default function AdminDashboard() {
               setFilters({
                 employeeId: "",
                 projectId: "",
-                date: "",
+                startDate: "",
+                endDate: "",
               });
-
-              setEmployeeSummary(null);
             }}
           >
             Clear
@@ -617,10 +541,6 @@ export default function AdminDashboard() {
 
       </div>
 
-
-      {/* =====================================================
-          TASK TABLE
-      ===================================================== */}
 
       <div className="card">
 
@@ -646,8 +566,6 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-
-          {/* EXPORT BUTTONS */}
 
           <div
             style={{
@@ -681,10 +599,6 @@ export default function AdminDashboard() {
           </div>
 
         </div>
-
-        {/* =====================================================
-            VIEW SWITCHER + FILTERS
-        ===================================================== */}
 
         <div className="view-toolbar">
 
@@ -796,13 +710,19 @@ export default function AdminDashboard() {
 
                   <td>
 
-                    <div className="employee-cell">
+                    <div
+                      className="employee-cell"
+                      style={{ cursor: task.Employee?.id ? "pointer" : "default" }}
+                      onClick={() => task.Employee?.id && selectEmployee(task.Employee.id)}
+                      title={task.Employee?.id ? "Filter by this employee" : undefined}
+                    >
 
-                      <div className="employee-avatar">
-                        {task.Employee?.name
-                          ?.charAt(0)
-                          ?.toUpperCase() || "U"}
-                      </div>
+                      <AvatarDisplay
+                        avatarId={task.Employee?.avatarId}
+                        name={task.Employee?.name}
+                        size={34}
+                        className="employee-avatar"
+                      />
 
                       <div>
 
@@ -898,6 +818,19 @@ export default function AdminDashboard() {
                               <strong>
                                 Locked
                               </strong>
+
+                              <span>
+                                Until{" "}
+                                {new Date(
+                                  task.lockedUntil
+                                ).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </span>
                             </div>
                           </>
                         ) : (
@@ -981,9 +914,8 @@ export default function AdminDashboard() {
                           openComments(task)
                         }
                       >
-                        <MessageSquare size={12} />
-                      Comments
-                  </button>
+                        💬 Comment
+                      </button>
 
                       {isAdmin && (
                         <button
@@ -1050,10 +982,6 @@ export default function AdminDashboard() {
       />
 
 
-
-      {/* =====================================================
-          COMMENTS MODAL
-      ===================================================== */}
 
       {showEditModal && (
         <TaskDetail

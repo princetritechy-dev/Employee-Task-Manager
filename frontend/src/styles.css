@@ -184,29 +184,14 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding: 12px;
-
   background: #16294A;
   border-radius: 10px;
-
   margin-bottom: 10px;
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
-
-  border-radius: 50%;
-
-  background: var(--primary);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 13px;
-  font-weight: 700;
+  text-decoration: none;   /* ← added */
+  color: inherit;          /* ← added */
+  cursor: pointer;         /* ← added */
+  transition: background 0.15s;  /* ← added */
 }
 
 .user-info {
@@ -1709,8 +1694,25 @@ form.card .btn {
   padding: 10px 12px;
   cursor: grab;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  animation: kanban-card-pop 0.18s ease;
 }
 
+.kanban-card-dragging {
+  opacity: 0.4;
+  transform: scale(0.97);
+}
+
+@keyframes kanban-card-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 .kanban-card:active {
   cursor: grabbing;
 }
@@ -1764,6 +1766,28 @@ form.card .btn {
   padding: 20px 0;
   border: 1px dashed var(--border);
   border-radius: 8px;
+}
+
+/* =====================================================
+   USERS PAGE
+===================================================== */
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.users-actions {
+  display: flex;
+  gap: 6px;
 }
 
 /* =====================================================
@@ -3309,7 +3333,7 @@ form.card .btn {
 
 @media (max-width: 900px) {
   .topbar-search {
-    display: flex;
+    display: none;
   }
 }
 
@@ -3399,4 +3423,308 @@ form.card .btn {
 .search-result-row svg {
   color: var(--muted);
   flex-shrink: 0;
+}
+
+/* Avatar-related additions and changes for the profile feature: */
+
+.success {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid #bbf7d0;
+  padding: 11px 13px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-form {
+  max-width: 640px;
+}
+
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  max-width: 480px;
+}
+
+.avatar-picker-option {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  padding: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.15s;   /* ← added */
+}
+
+.avatar-picker-option:hover {
+  border-color: var(--border);
+  transform: scale(1.08);   /* ← added */
+}
+
+.avatar-picker-option:active {   /* ← new rule */
+  transform: scale(0.95);
+}
+
+.avatar-picker-option.selected {
+  border-color: var(--primary);
+  transform: scale(1.08);   /* ← added */
+}
+.avatar-picker-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card);
+}
+
+.profile-section-title {
+  margin: 20px 0 4px;
+  font-size: 15px;
+}
+
+.topbar-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.avatar-display {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-card:hover {          /* ← new rule */
+  background: #1c3258;
+}
+
+/* =====================================================
+   PROFILE — LIVE PREVIEW + INTERACTIVE FEEDBACK
+===================================================== */
+
+.unsaved-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange-bg);
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  animation: unsaved-pop 0.2s ease;
+}
+
+@keyframes unsaved-pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-layout .profile-form {
+  max-width: none;
+}
+
+.profile-preview-card {
+  position: sticky;
+  top: 96px;
+}
+
+.preview-big-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.preview-big-avatar > div {
+  transition: transform 0.2s ease;
+}
+
+.preview-big-avatar strong {
+  font-size: 15px;
+}
+
+.preview-block {
+  margin-bottom: 16px;
+}
+
+.preview-block-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.preview-sidebar-mock {
+  background: var(--sidebar);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.preview-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #16294A;
+  border-radius: 8px;
+  color: white;
+}
+
+.preview-user-card .user-info strong {
+  color: white;
+}
+
+.preview-topbar-mock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* =====================================================
+   LIVE PASSWORD FEEDBACK
+===================================================== */
+
+.password-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.password-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.password-check svg {
+  opacity: 0.3;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.password-check.met {
+  color: var(--green);
+}
+
+.password-check.met svg {
+  opacity: 1;
+}
+
+.password-match {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.password-match.ok {
+  color: var(--green);
+}
+
+.password-match.bad {
+  color: var(--red);
+}
+
+/* =====================================================
+   ADMIN "VIEW EMPLOYEE DASHBOARD" MODE
+===================================================== */
+
+.viewing-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid #BFD1FB;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.viewing-banner-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--primary-dark);
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.viewing-banner-back:hover {
+  text-decoration: underline;
+}
+
+.page-head-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-head-identity h1 {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-preview-card {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .avatar-picker-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }

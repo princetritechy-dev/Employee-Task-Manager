@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Calendar, GripVertical, ListChecks, Lock, AlertTriangle, Repeat } from "lucide-react";
+import AvatarDisplay from "./AvatarDisplay";
 import api from "../api";
 
 export const DEFAULT_COLUMNS = [
@@ -37,10 +38,39 @@ export default function TaskBoard({
   const [reasonPrompt, setReasonPrompt] = useState(null); // { task, column }
   const [reasonText, setReasonText] = useState("");
 
+  // Optimistic status overrides, keyed by task id — NOT a full local copy
+  // of `tasks`. A plain local copy gets clobbered the moment the parent's
+  // background poll resolves with data it fetched *before* our move landed,
+  // which snaps the card back to its old column for a moment (the exact
+  // "completed, then progress" flicker). Instead we keep a small override
+  // map that wins over whatever `tasks` says, and only clear an entry once
+  // the parent's own data actually agrees with us — self-healing, so it
+  // can never be stale-overwritten mid-flight.
+  const [pendingMoves, setPendingMoves] = useState({});
+
+  useEffect(() => {
+    setPendingMoves((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const taskId of Object.keys(next)) {
+        const serverTask = tasks.find((t) => t.id === taskId);
+        if (serverTask && serverTask.status === next[taskId]) {
+          delete next[taskId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [tasks]);
+
+  const displayTasks = tasks.map((t) =>
+    pendingMoves[t.id] ? { ...t, status: pendingMoves[t.id] } : t
+  );
+
   // Any task whose status doesn't match a defined column still needs to be
   // visible somewhere, rather than silently disappearing from the board.
   const knownKeys = new Set(columnDefs.map((c) => c.key));
-  const orphanTasks = tasks.filter((t) => !knownKeys.has(t.status));
+  const orphanTasks = displayTasks.filter((t) => !knownKeys.has(t.status));
 
   const effectiveColumns = orphanTasks.length
     ? [...columnDefs, { key: "__other__", label: "Other", color: "#94A3B8", category: "open", promptOnEnter: false }]
@@ -48,7 +78,7 @@ export default function TaskBoard({
 
   const columns = effectiveColumns.map((col) => ({
     ...col,
-    tasks: (col.key === "__other__" ? orphanTasks : tasks.filter((t) => t.status === col.key))
+    tasks: (col.key === "__other__" ? orphanTasks : displayTasks.filter((t) => t.status === col.key))
       .sort((a, b) => (a.order || 0) - (b.order || 0)),
   }));
 
@@ -59,6 +89,11 @@ export default function TaskBoard({
   async function moveTask(task, column, reason) {
     if (task.status === column.key) return;
 
+    // Optimistic: mark this task as moved right away. It stays this way
+    // regardless of what any in-flight poll returns, until the parent's
+    // `tasks` prop itself reports the new status back to us above.
+    setPendingMoves((prev) => ({ ...prev, [task.id]: column.key }));
+
     try {
       await api.patch(`/tasks/${task.id}/move`, {
         statusKey: column.key,
@@ -66,6 +101,13 @@ export default function TaskBoard({
       });
       onChanged?.();
     } catch (err) {
+      // The move didn't actually happen server-side — drop the override
+      // so the card falls back to its real (unmoved) column.
+      setPendingMoves((prev) => {
+        const next = { ...prev };
+        delete next[task.id];
+        return next;
+      });
       alert(
         err.response?.data?.message || "Could not move task"
       );
@@ -76,7 +118,7 @@ export default function TaskBoard({
     e.preventDefault();
     setOverColumn(null);
 
-    const task = tasks.find((t) => t.id === dragTaskId);
+    const task = displayTasks.find((t) => t.id === dragTaskId);
     setDragTaskId(null);
 
     if (!task || column.key === "__other__") return;
@@ -130,7 +172,7 @@ export default function TaskBoard({
               return (
                 <div
                   key={task.id}
-                  className={`kanban-card ${!draggable ? "kanban-card-readonly" : ""}`}
+                  className={`kanban-card ${!draggable ? "kanban-card-readonly" : ""} ${dragTaskId === task.id ? "kanban-card-dragging" : ""}`}
                   draggable={draggable}
                   onDragStart={() => draggable && setDragTaskId(task.id)}
                   onDragEnd={() => setDragTaskId(null)}
@@ -154,9 +196,7 @@ export default function TaskBoard({
 
                   {(mode === "admin" || mode === "member") && (
                     <div className="kanban-card-assignee">
-                      <span className="mini-avatar">
-                        {task.Employee?.name?.charAt(0)?.toUpperCase() || "U"}
-                      </span>
+                      <AvatarDisplay avatarId={task.Employee?.avatarId} name={task.Employee?.name} size={18} />
                       {task.Employee?.name || "Unknown"}
                     </div>
                   )}
@@ -164,9 +204,13 @@ export default function TaskBoard({
                   {task.Assignees?.length > 0 && (
                     <div className="assignee-avatars" title={task.Assignees.map((a) => a.name).join(", ")}>
                       {task.Assignees.slice(0, 4).map((a) => (
-                        <span className="mini-avatar" key={a.id}>
-                          {a.name?.charAt(0)?.toUpperCase() || "U"}
-                        </span>
+                        <AvatarDisplay
+                          key={a.id}
+                          avatarId={a.avatarId}
+                          name={a.name}
+                          size={18}
+                          className="mini-avatar"
+                        />
                       ))}
                     </div>
                   )}

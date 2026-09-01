@@ -4,6 +4,7 @@ const crypto = require("crypto");
 
 const { User } = require("../models");
 const sendEmail = require("../utils/sendEmail");
+const { AVATAR_IDS } = require("../utils/avatarOptions");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
@@ -14,7 +15,8 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
-    status: user.status
+    status: user.status,
+    avatarId: user.avatarId || ""
   };
 }
 
@@ -167,7 +169,7 @@ exports.forgotPassword = async (req, res) => {
       </p>
 
       <div style="margin: 30px 0;">
-        <a
+        
           href="${resetURL}"
           style="
             display: inline-block;
@@ -297,4 +299,88 @@ exports.me = async (req, res) => {
   res.json({
     user: publicUser(req.user)
   });
+};
+
+// ========================================
+// UPDATE PROFILE — any logged-in user, their own account only
+// ========================================
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, avatarId, currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: "Name can't be empty" });
+      }
+      user.name = trimmed;
+    }
+
+    if (email !== undefined) {
+      const normalizedEmail = String(email).toLowerCase().trim();
+
+      if (!EMAIL_RE.test(normalizedEmail)) {
+        return res.status(400).json({ message: "Enter a valid email address" });
+      }
+
+      if (normalizedEmail !== user.email) {
+        const existing = await User.findOne({ email: normalizedEmail });
+        if (existing) {
+          return res.status(409).json({ message: "Email already in use" });
+        }
+        user.email = normalizedEmail;
+      }
+    }
+
+    if (avatarId !== undefined) {
+      if (avatarId && !AVATAR_IDS.includes(avatarId)) {
+        return res.status(400).json({ message: "That's not a valid avatar option" });
+      }
+
+      user.avatarId = avatarId;
+    }
+
+    // Password change is optional and requires the current password.
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Enter your current password to set a new one" });
+      }
+
+      const matches = await bcrypt.compare(currentPassword, user.password);
+      if (!matches) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      if (!PASSWORD_RE.test(newPassword)) {
+        return res.status(400).json({
+          message: "New password must be at least 6 characters and include a letter and a number"
+        });
+      }
+
+      user.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated",
+      user: publicUser(user)
+    });
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+
+    if (error.name === "ValidationError") {
+      const message = Object.values(error.errors)[0]?.message || "Invalid input";
+      return res.status(400).json({ message });
+    }
+
+    res.status(500).json({ message: "Could not update profile" });
+  }
 };

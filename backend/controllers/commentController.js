@@ -1,30 +1,11 @@
 const mongoose = require("mongoose");
 const { Task, TaskComment, User } = require("../models");
 
-/*
-|--------------------------------------------------------------------------
-| Serialize comment
-|--------------------------------------------------------------------------
-| Attaches the admin who wrote the comment under "Admin" (matching the old
-| Sequelize `as: "Admin"` include) while keeping the raw adminId/taskId
-| fields on the object.
-|--------------------------------------------------------------------------
-*/
-
 function serialize(comment, admin) {
     const json = comment.toJSON();
     json.Admin = admin ? admin.toJSON() : null;
     return json;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Can this user comment on / see comments for this task?
-|--------------------------------------------------------------------------
-| Admins can always see/comment. Otherwise the user must be the task's
-| owner or one of its assignees.
-|--------------------------------------------------------------------------
-*/
 
 function canAccessTask(user, task) {
     if (user.role === "admin") return true;
@@ -71,7 +52,7 @@ exports.createComment = async (req, res) => {
             comment: comment.trim(),
         });
 
-        const admin = await User.findById(req.user._id).select("name email role");
+        const admin = await User.findById(req.user._id).select("name email role avatarId");
 
         res.status(201).json(serialize(newComment, admin));
     } catch (error) {
@@ -104,7 +85,7 @@ exports.getComments = async (req, res) => {
         const adminIds = [...new Set(comments.map((c) => c.adminId.toString()))];
 
         const admins = await User.find({ _id: { $in: adminIds } }).select(
-            "name email role"
+            "name email role avatarId"
         );
 
         const adminsById = new Map(admins.map((a) => [a.id, a]));

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Check, Search, X } from "lucide-react";
+import AvatarDisplay from "./AvatarDisplay";
 import api from "../api";
 
 const STEPS = [
@@ -52,16 +53,6 @@ export default function ProjectWizard({ clients, employees, project, onClose, on
         : [...f[field], id],
     }));
   }
-
-  /*
-  |------------------------------------------------------------------------
-  | Validation
-  |------------------------------------------------------------------------
-  | Checks every field regardless of which step you're currently on, so
-  | Create/Save always catches everything — not just whatever step happens
-  | to be showing. Returns the first invalid step so we can jump there.
-  |------------------------------------------------------------------------
-  */
 
   function validate() {
     const errs = {};
@@ -213,9 +204,7 @@ export default function ProjectWizard({ clients, employees, project, onClose, on
               <div className="wizard-people-list">
                 {filteredEmployees.map((emp) => (
                   <div className="wizard-people-row" key={emp.id}>
-                    <span className="mini-avatar">
-                      {emp.name?.charAt(0)?.toUpperCase() || "U"}
-                    </span>
+                    <AvatarDisplay avatarId={emp.avatarId} name={emp.name} size={32} />
                     <div className="wizard-people-info">
                       <strong>{emp.name}</strong>
                       <small>{emp.email}</small>

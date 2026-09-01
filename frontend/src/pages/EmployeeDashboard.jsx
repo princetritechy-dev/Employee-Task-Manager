@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Lock, Unlock, Download, List, Kanban, CalendarRange, MessageSquare, Plus } from "lucide-react";
+import { useParams, Link } from "react-router-dom";
+import { Lock, Unlock, Download, List, Kanban, CalendarRange, MessageSquare, Plus, Eye, ArrowLeft } from "lucide-react";
 import Layout from "../components/Layout";
 import TaskBoard from "../components/TaskBoard";
 import TaskCalendar from "../components/TaskCalendar";
 import TaskDetail from "../components/TaskDetail";
+import AvatarDisplay from "../components/AvatarDisplay";
 import api from "../api";
 
 function hours(minutes) {
@@ -13,6 +15,14 @@ function hours(minutes) {
 
 export default function EmployeeDashboard() {
   const currentUser = JSON.parse(sessionStorage.getItem("user") || "null");
+
+  // When an admin opens /admin/employee/:employeeId/dashboard, this same
+  // component renders in read-only "viewing" mode for that person instead
+  // of the logged-in user's own tasks.
+  const { employeeId: viewingEmployeeId } = useParams();
+  const isViewing = !!viewingEmployeeId;
+  const [viewedEmployee, setViewedEmployee] = useState(null);
+
   const [tasks, setTasks] = useState([]);
   const [summary, setSummary] = useState({});
   const [error, setError] = useState("");
@@ -25,7 +35,9 @@ export default function EmployeeDashboard() {
 
   async function load() {
     try {
-      const taskRes = await api.get("/tasks/my");
+      const taskRes = isViewing
+        ? await api.get(`/tasks/admin/all?employeeId=${viewingEmployeeId}`)
+        : await api.get("/tasks/my");
 
       const safeData = Array.isArray(taskRes.data) ? taskRes.data : [];
 
@@ -81,7 +93,7 @@ export default function EmployeeDashboard() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-        "Could not load tasks"
+          "Could not load tasks"
       );
     }
   }
@@ -93,13 +105,21 @@ export default function EmployeeDashboard() {
     // (by an admin, or from another tab) without needing a manual reload.
     const interval = setInterval(load, 6000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewingEmployeeId]);
+
+  useEffect(() => {
+    if (!isViewing) {
+      setViewedEmployee(null);
+      return;
+    }
+    api
+      .get(`/tasks/admin/employee/${viewingEmployeeId}/summary`)
+      .then((r) => setViewedEmployee(r.data.employee))
+      .catch(() => setViewedEmployee(null));
+  }, [isViewing, viewingEmployeeId]);
 
 
-
-  /* =========================================================
-     EXPORT CSV
-  ========================================================= */
 
   function exportCSV() {
     if (!tasks.length) {
@@ -135,7 +155,6 @@ export default function EmployeeDashboard() {
       ];
     });
 
-    /* Add total at the bottom */
     rows.push([
       "",
       "",
@@ -228,38 +247,55 @@ export default function EmployeeDashboard() {
   }
 
   return (
-    <Layout title="Employee Dashboard">
+    <Layout title={isViewing ? "Viewing Employee" : "Employee Dashboard"}>
 
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
+      {isViewing && (
+        <div className="viewing-banner">
+          <Eye size={15} />
+          <span>
+            You're viewing <strong>{viewedEmployee?.name || "this employee"}'s</strong> dashboard as admin — read-only.
+          </span>
+          <Link to="/admin" className="viewing-banner-back">
+            <ArrowLeft size={13} /> Back to Admin Dashboard
+          </Link>
+        </div>
+      )}
 
       <div className="page-head">
 
         <div>
-          <h1>My Dashboard</h1>
-
-          <p className="muted">
-            Track your daily work and time.
-          </p>
+          {isViewing ? (
+            <div className="page-head-identity">
+              <AvatarDisplay avatarId={viewedEmployee?.avatarId} name={viewedEmployee?.name} size={40} />
+              <div>
+                <h1>{viewedEmployee?.name || "Employee"}'s Dashboard</h1>
+                <p className="muted">{viewedEmployee?.email}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1>My Dashboard</h1>
+              <p className="muted">
+                Track your daily work and time.
+              </p>
+            </>
+          )}
         </div>
 
-        <button
-          className="btn"
-          onClick={() => {
-            setEditingTask(null);
-            setShowEditModal(true);
-          }}
-        >
-          <Plus size={16} /> New Task
-        </button>
+        {!isViewing && (
+          <button
+            className="btn"
+            onClick={() => {
+              setEditingTask(null);
+              setShowEditModal(true);
+            }}
+          >
+            <Plus size={16} /> New Task
+          </button>
+        )}
 
       </div>
 
-
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
 
       {error && (
         <div className="error">
@@ -267,10 +303,6 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-
-      {/* =====================================================
-          STATS
-      ===================================================== */}
 
       <div className="stats">
 
@@ -301,19 +333,10 @@ export default function EmployeeDashboard() {
       </div>
 
 
-      {/* =====================================================
-          TASKS
-      ===================================================== */}
-
-      {/* =====================================================
-    TASKS
-===================================================== */}
-
       <div className="card">
 
         <div className="tasks-header">
 
-          {/* LEFT */}
           <div className="tasks-header-info">
 
             <h2>My Tasks</h2>
@@ -326,10 +349,8 @@ export default function EmployeeDashboard() {
           </div>
 
 
-          {/* RIGHT */}
           <div className="tasks-header-actions">
 
-            {/* TOTAL */}
             <div className="export-summary">
 
               <span className="export-summary-label">
@@ -349,7 +370,6 @@ export default function EmployeeDashboard() {
             </div>
 
 
-            {/* CSV */}
             <button
               className="export-csv-btn"
               onClick={exportCSV}
@@ -365,10 +385,6 @@ export default function EmployeeDashboard() {
           </div>
 
         </div>
-
-        {/* =====================================================
-            VIEW SWITCHER + FILTERS
-        ===================================================== */}
 
         <div className="view-toolbar">
 
@@ -429,260 +445,255 @@ export default function EmployeeDashboard() {
 
         </div>
 
-        {/* =====================================================
-            BOARD VIEW
-        ===================================================== */}
-
         {view === "board" && (
           <TaskBoard
             tasks={filteredTasks}
             onChanged={load}
             onEdit={openEdit}
+            mode={isViewing ? "member" : "employee"}
+            currentUserId={isViewing ? "__readonly__" : undefined}
           />
         )}
-
-        {/* =====================================================
-            CALENDAR VIEW
-        ===================================================== */}
 
         {view === "calendar" && (
           <TaskCalendar tasks={filteredTasks} onEdit={openEdit} />
         )}
 
-        {/* =====================================================
-            TASK TABLE (LIST VIEW)
-        ===================================================== */}
-
         {view === "list" && (
-          <div className="table-wrap">
+        <div className="table-wrap">
 
-            <table>
+          <table>
 
-              <thead>
+            <thead>
 
-                <tr>
-                  <th>Date</th>
-                  <th>Project</th>
-                  <th>Task</th>
-                  <th>Assigned By</th>
-                  <th>Time</th>
-                  <th>Lock</th>
-                  <th>Action</th>
+              <tr>
+                <th>Date</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th>Assigned By</th>
+                <th>Time</th>
+                <th>Lock</th>
+                <th>Action</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {filteredTasks.map((task) => (
+
+                <tr key={task.id}>
+
+                  <td>
+                    {task.taskDate}
+                  </td>
+
+
+                  <td>
+                    {task.Project?.name || "-"}
+                  </td>
+
+
+                  <td>
+
+                    <div
+                      className="task-title-row"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => openEdit(task)}
+                    >
+                      <span className={`priority-dot priority-${task.priority || "medium"}`} title={`${task.priority || "medium"} priority`} />
+                      <strong>
+                        {task.taskTitle}
+                      </strong>
+                    </div>
+
+                    <br />
+
+                    <small>
+                      {task.description}
+                    </small>
+
+                    {(task.dueDate || task.tags?.length > 0 || task.subtasks?.length > 0) && (
+                      <div className="task-meta-row">
+                        {task.dueDate && (
+                          <span className="meta-chip">Due {task.dueDate}</span>
+                        )}
+                        {task.subtasks?.length > 0 && (
+                          <span className="meta-chip">
+                            {task.subtasks.filter((s) => s.completed).length}/
+                            {task.subtasks.length} subtasks
+                          </span>
+                        )}
+                        {task.tags?.map((tag) => (
+                          <span className="tag-chip small" key={tag}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+
+                    {task.Comments?.length > 0 && (
+                      <div className="task-comments">
+
+                        <strong>
+                          Admin Comments:
+                        </strong>
+
+
+                        {task.Comments.map((comment)=>(
+                          <div 
+                            key={comment.id}
+                            className="comment-box"
+                          >
+
+                            <p>
+                              {comment.comment}
+                            </p>
+
+                            <small>
+                              By: {comment.Admin?.name || "Admin"}
+                            </small>
+
+                          </div>
+                        ))}
+
+                      </div>
+                    )}
+
+                  </td>
+
+
+                  <td>
+                    {task.assignedBy || "-"}
+                  </td>
+
+
+                  <td>
+                    {hours(task.timeSpent)}
+                  </td>
+
+                  <td>
+
+                    <div
+                      className={`lock-status ${
+                        task.isLocked
+                          ? "locked"
+                          : "unlocked"
+                      }`}
+                    >
+
+                      {task.isLocked ? (
+                        <>
+                          <Lock size={14} />
+
+                          <div>
+
+                            <strong>
+                              Locked
+                            </strong>
+
+                            <span>
+                              Until{" "}
+                              {new Date(
+                                task.lockedUntil
+                              ).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </span>
+
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Unlock size={14} />
+
+                          <div>
+
+                            <strong>
+                              Editable
+                            </strong>
+
+                            <span>
+                              Available
+                            </span>
+
+                          </div>
+                        </>
+                      )}
+
+                    </div>
+
+                  </td>
+
+
+                  <td className="task-actions">
+
+                    <button
+                      className="edit-btn"
+                      onClick={() => openEdit(task)}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      className="btn small secondary"
+                      onClick={() => openEdit(task)}
+                    >
+                      <MessageSquare size={12} /> Comments
+                    </button>
+
+                  </td>
+
                 </tr>
 
-              </thead>
+              ))}
 
 
-              <tbody>
+              {!filteredTasks.length && (
 
-                {filteredTasks.map((task) => (
+                <tr>
 
-                  <tr key={task.id}>
+                  <td
+                    colSpan="7"
+                    className="empty"
+                  >
+                    {tasks.length ? "No tasks match your filters." : "No tasks yet."}
+                  </td>
 
-                    <td>
-                      {task.taskDate}
-                    </td>
+                </tr>
 
+              )}
 
-                    <td>
-                      {task.Project?.name || "-"}
-                    </td>
+            </tbody>
 
+          </table>
 
-                    <td>
-
-                      <div
-                        className="task-title-row"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => openEdit(task)}
-                      >
-                        <span className={`priority-dot priority-${task.priority || "medium"}`} title={`${task.priority || "medium"} priority`} />
-                        <strong>
-                          {task.taskTitle}
-                        </strong>
-                      </div>
-
-                      <br />
-
-                      <small>
-                        {task.description}
-                      </small>
-
-                      {(task.dueDate || task.tags?.length > 0 || task.subtasks?.length > 0) && (
-                        <div className="task-meta-row">
-                          {task.dueDate && (
-                            <span className="meta-chip">Due {task.dueDate}</span>
-                          )}
-                          {task.subtasks?.length > 0 && (
-                            <span className="meta-chip">
-                              {task.subtasks.filter((s) => s.completed).length}/
-                              {task.subtasks.length} subtasks
-                            </span>
-                          )}
-                          {task.tags?.map((tag) => (
-                            <span className="tag-chip small" key={tag}>
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-
-                      {/* ADMIN COMMENTS */}
-                      {task.Comments?.length > 0 && (
-                        <div className="task-comments">
-
-                          <strong>
-                            Admin Comments:
-                          </strong>
-
-
-                          {task.Comments.map((comment) => (
-                            <div
-                              key={comment.id}
-                              className="comment-box"
-                            >
-
-                              <p>
-                                {comment.comment}
-                              </p>
-
-                              <small>
-                                By: {comment.Admin?.name || "Admin"}
-                              </small>
-
-                            </div>
-                          ))}
-
-                        </div>
-                      )}
-
-                    </td>
-
-
-                    <td>
-                      {task.assignedBy || "-"}
-                    </td>
-
-
-                    <td>
-                      {hours(task.timeSpent)}
-                    </td>
-
-                    <td>
-
-                      <div
-                        className={`lock-status ${task.isLocked
-                            ? "locked"
-                            : "unlocked"
-                          }`}
-                      >
-
-                        {task.isLocked ? (
-                          <>
-                            <Lock size={14} />
-
-                            <div>
-
-                              <strong>
-                                Locked
-                              </strong>
-
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <Unlock size={14} />
-
-                            <div>
-
-                              <strong>
-                                Editable
-                              </strong>
-
-                              <span>
-                                Available
-                              </span>
-
-                            </div>
-                          </>
-                        )}
-
-                      </div>
-
-                    </td>
-
-
-                    <td className="task-actions">
-                      <button
-                        className="edit-btn"
-                        onClick={() => openEdit(task)}
-                      >
-                        View
-                      </button>
-
-                      {!task.isLocked && (
-                        <button
-                          className="btn small"
-                          onClick={() => openEdit(task)}
-                        >
-                          Edit Task
-                        </button>
-                      )}
-
-                      <button
-                        className="btn small secondary"
-                        onClick={() => openEdit(task)}
-                      >
-                        <MessageSquare size={12} />
-                        Comments
-                      </button>
-                    </td>
-
-                  </tr>
-
-                ))}
-
-
-                {!filteredTasks.length && (
-
-                  <tr>
-
-                    <td
-                      colSpan="7"
-                      className="empty"
-                    >
-                      {tasks.length ? "No tasks match your filters." : "No tasks yet."}
-                    </td>
-
-                  </tr>
-
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
+        </div>
         )}
 
       </div>
 
-      {showEditModal && (
-        <TaskDetail
-          task={editingTask}
-          currentUser={currentUser}
-          onSaved={() => {
-            load();
-            setShowEditModal(false);
-            setEditingTask(null);
-          }}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingTask(null);
-          }}
-        />
-      )}
+{showEditModal && (
+  <TaskDetail
+    task={editingTask}
+    currentUser={currentUser}
+    onSaved={() => {
+      load();
+      setShowEditModal(false);
+      setEditingTask(null);
+    }}
+    onClose={() => {
+      setShowEditModal(false);
+      setEditingTask(null);
+    }}
+  />
+)}
 
     </Layout>
   );

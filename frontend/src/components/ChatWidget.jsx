@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Send, Users, MessageCircle, Pencil, Trash2, X, Check } from "lucide-react";
+import AvatarDisplay from "./AvatarDisplay";
 import api from "../api";
 
 let typingTimeout = null;
@@ -79,8 +80,6 @@ export default function ChatWidget({ open, onClose, onUnreadChange }) {
     }
   }
 
-  // Always poll unread counts in the background, even when the panel is
-  // closed, so the bell/bubble badges stay accurate.
   useEffect(() => {
     loadUnread();
     const interval = setInterval(loadUnread, 8000);
@@ -215,7 +214,7 @@ export default function ChatWidget({ open, onClose, onUnreadChange }) {
               onClick={() => setActive({ type: "dm", userId: c.id, name: c.name })}
             >
               <span className="chat-avatar-wrap">
-                <span className="chat-avatar">{c.name?.charAt(0)?.toUpperCase() || "U"}</span>
+                <AvatarDisplay avatarId={c.avatarId} name={c.name} size={32} />
                 <span className={`chat-presence-dot ${c.online ? "online" : ""}`} />
               </span>
               <div className="chat-contact-info">

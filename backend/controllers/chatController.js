@@ -3,16 +3,10 @@ const { ChatMessage, ChatRead, User } = require("../models");
 const presence = require("../utils/presence");
 const typing = require("../utils/typing");
 
-/*
-|--------------------------------------------------------------------------
-| Serialize a chat message
-|--------------------------------------------------------------------------
-*/
-
 function serialize(msg, sender) {
   const json = msg.toJSON();
   json.Sender = sender
-    ? { id: sender.id, name: sender.name, role: sender.role }
+    ? { id: sender.id, name: sender.name, role: sender.role, avatarId: sender.avatarId || "" }
     : null;
   return json;
 }
@@ -20,17 +14,11 @@ function serialize(msg, sender) {
 async function attachSenders(messages) {
   const senderIds = [...new Set(messages.map((m) => m.senderId.toString()))];
   const senders = await User.find({ _id: { $in: senderIds } }).select(
-    "name role"
+    "name role avatarId"
   );
   const sendersById = new Map(senders.map((s) => [s.id, s]));
   return messages.map((m) => serialize(m, sendersById.get(m.senderId.toString())));
 }
-
-/*
-|--------------------------------------------------------------------------
-| CONTACTS — every other active team member (any role can message anyone)
-|--------------------------------------------------------------------------
-*/
 
 exports.contacts = async (req, res) => {
   try {
@@ -38,7 +26,7 @@ exports.contacts = async (req, res) => {
       _id: { $ne: req.user._id },
       status: "active",
     })
-      .select("name email role")
+      .select("name email role avatarId")
       .sort({ name: 1 });
 
     res.json(
@@ -47,6 +35,7 @@ exports.contacts = async (req, res) => {
         name: u.name,
         email: u.email,
         role: u.role,
+        avatarId: u.avatarId || "",
         online: presence.isOnline(u.id),
       }))
     );
@@ -55,12 +44,6 @@ exports.contacts = async (req, res) => {
     res.status(500).json({ message: "Could not load contacts" });
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| TEAM ROOM
-|--------------------------------------------------------------------------
-*/
 
 exports.getTeamMessages = async (req, res) => {
   try {
@@ -95,12 +78,6 @@ exports.postTeamMessage = async (req, res) => {
     res.status(500).json({ message: "Could not send message" });
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| DIRECT MESSAGES
-|--------------------------------------------------------------------------
-*/
 
 exports.getDM = async (req, res) => {
   try {
@@ -161,12 +138,6 @@ exports.postDM = async (req, res) => {
     res.status(500).json({ message: "Could not send message" });
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| EDIT / DELETE — sender only (admin can also delete, for moderation)
-|--------------------------------------------------------------------------
-*/
 
 exports.editMessage = async (req, res) => {
   try {
@@ -231,12 +202,6 @@ exports.deleteMessage = async (req, res) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| READ STATE / UNREAD COUNTS
-|--------------------------------------------------------------------------
-*/
-
 exports.markRead = async (req, res) => {
   try {
     const { conversationKey } = req.body;
@@ -263,7 +228,6 @@ exports.unreadCounts = async (req, res) => {
     const reads = await ChatRead.find({ userId: req.user._id });
     const lastReadByKey = new Map(reads.map((r) => [r.conversationKey, r.lastReadAt]));
 
-    // Team Room: messages from anyone but me, after my last-read time.
     const teamSince = lastReadByKey.get("team") || new Date(0);
     const teamCount = await ChatMessage.countDocuments({
       recipientId: null,
@@ -271,7 +235,6 @@ exports.unreadCounts = async (req, res) => {
       createdAt: { $gt: teamSince },
     });
 
-    // DMs: group unread-by-sender across all conversations addressed to me.
     const dmUnread = await ChatMessage.aggregate([
       { $match: { recipientId: req.user._id } },
       {
@@ -298,12 +261,6 @@ exports.unreadCounts = async (req, res) => {
     res.status(500).json({ message: "Could not load unread counts" });
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| TYPING INDICATORS
-|--------------------------------------------------------------------------
-*/
 
 exports.pingTyping = async (req, res) => {
   try {

@@ -8,17 +8,12 @@ import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Clients from "./pages/Clients";
 import Users from "./pages/Users";
+import Profile from "./pages/Profile";
 import MyWork from "./pages/MyWork";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { ToastProvider } from "./components/Toast";
 
-
-/*
-|--------------------------------------------------------------------------
-| Authentication guard
-|--------------------------------------------------------------------------
-*/
 
 function RequireAuth({ children }) {
   const token = sessionStorage.getItem("token");
@@ -38,12 +33,6 @@ function RequireAuth({ children }) {
   return children;
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| Admin guard
-|--------------------------------------------------------------------------
-*/
 
 function RequireAdmin({ children }) {
   const token = sessionStorage.getItem("token");
@@ -73,30 +62,16 @@ function RequireAdmin({ children }) {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| Application routes
-|--------------------------------------------------------------------------
-*/
-
 export default function App() {
   return (
     <ToastProvider>
       <Routes>
-
-      {/* ==============================
-          PUBLIC
-      ============================== */}
 
       <Route
         path="/login"
         element={<Login />}
       />
 
-
-      {/* ==============================
-          AUTHENTICATED USERS
-      ============================== */}
 
       <Route
         path="/"
@@ -143,10 +118,15 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        }
+      />
 
-      {/* ==============================
-          ADMIN ONLY
-      ============================== */}
 
       <Route
         path="/admin"
@@ -166,10 +146,15 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/admin/employee/:employeeId/dashboard"
+        element={
+          <RequireAdmin>
+            <EmployeeDashboard />
+          </RequireAdmin>
+        }
+      />
 
-      {/* ==============================
-          FALLBACK
-      ============================== */}
 
       <Route
         path="*"

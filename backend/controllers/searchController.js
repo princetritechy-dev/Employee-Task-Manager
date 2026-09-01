@@ -1,28 +1,10 @@
 const { Task, Project, Client, User } = require("../models");
 
-/*
-|--------------------------------------------------------------------------
-| Escape user input before dropping it into a RegExp
-|--------------------------------------------------------------------------
-*/
-
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 const RESULT_LIMIT = 6;
-
-/*
-|--------------------------------------------------------------------------
-| GLOBAL SEARCH — ⌘K style, across tasks/projects/clients/(users for admin)
-|--------------------------------------------------------------------------
-| Scoped by role, same rules as everywhere else in the app:
-|   - Tasks: admins see everything, everyone else only their own/assigned
-|   - Projects/Clients: visible to any authenticated user (unchanged from
-|     how the rest of the app already treats them)
-|   - Users: admin only
-|--------------------------------------------------------------------------
-*/
 
 exports.search = async (req, res) => {
   try {
@@ -53,7 +35,7 @@ exports.search = async (req, res) => {
 
       isAdmin
         ? User.find({ name: pattern, role: "employee" })
-            .select("name email")
+            .select("name email avatarId")
             .limit(RESULT_LIMIT)
         : Promise.resolve([]),
     ]);
@@ -67,7 +49,7 @@ exports.search = async (req, res) => {
       })),
       projects: projects.map((p) => ({ id: p.id, name: p.name, status: p.status })),
       clients: clients.map((c) => ({ id: c.id, name: c.name })),
-      users: users.map((u) => ({ id: u.id, name: u.name, email: u.email })),
+      users: users.map((u) => ({ id: u.id, name: u.name, email: u.email, avatarId: u.avatarId || "" })),
     });
   } catch (error) {
     console.error("Global search error:", error);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import AvatarDisplay from "../components/AvatarDisplay";
 import {
   ArrowLeft,
   List,
@@ -219,9 +220,7 @@ export default function ProjectDetail() {
             <div className="assignee-avatars project-members" title={project.Users.map((u) => u.name).join(", ")}>
               <Users size={14} className="muted" />
               {project.Users.slice(0, 6).map((u) => (
-                <span className="mini-avatar" key={u.id}>
-                  {u.name?.charAt(0)?.toUpperCase() || "U"}
-                </span>
+                <AvatarDisplay key={u.id} avatarId={u.avatarId} name={u.name} size={26} className="mini-avatar" />
               ))}
             </div>
           )}

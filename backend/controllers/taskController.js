@@ -94,14 +94,14 @@ async function loadTaskWithRelations(taskId) {
 
   const [project, employee, comments, assignees, blockers] = await Promise.all([
     Project.findById(task.projectId).select("name status"),
-    User.findById(task.userId).select("name email"),
+    User.findById(task.userId).select("name email avatarId"),
     TaskComment.find({ taskId: task._id }).sort({ createdAt: 1 }),
-    User.find({ _id: { $in: task.assigneeIds || [] } }).select("name email"),
+    User.find({ _id: { $in: task.assigneeIds || [] } }).select("name email avatarId"),
     Task.find({ _id: { $in: task.blockedBy || [] } }).select("taskTitle status"),
   ]);
 
   const adminIds = [...new Set(comments.map((c) => c.adminId.toString()))];
-  const admins = await User.find({ _id: { $in: adminIds } }).select("name email");
+  const admins = await User.find({ _id: { $in: adminIds } }).select("name email avatarId");
   const adminsById = new Map(admins.map((a) => [a.id, a]));
 
   return serializeTask(task, { project, employee, comments, adminsById, assignees, blockers });
@@ -129,9 +129,9 @@ async function loadTasksWithRelations(tasks) {
 
   const [projects, employees, comments, assigneeUsers, blockerTasks] = await Promise.all([
     Project.find({ _id: { $in: projectIds } }).select("name status"),
-    User.find({ _id: { $in: userIds } }).select("name email"),
+    User.find({ _id: { $in: userIds } }).select("name email avatarId"),
     TaskComment.find({ taskId: { $in: taskIds } }).sort({ createdAt: 1 }),
-    User.find({ _id: { $in: assigneeIds } }).select("name email"),
+    User.find({ _id: { $in: assigneeIds } }).select("name email avatarId"),
     Task.find({ _id: { $in: blockerIds } }).select("taskTitle status"),
   ]);
 
@@ -141,7 +141,7 @@ async function loadTasksWithRelations(tasks) {
   const blockerTasksById = new Map(blockerTasks.map((t) => [t.id, t]));
 
   const adminIds = [...new Set(comments.map((c) => c.adminId.toString()))];
-  const admins = await User.find({ _id: { $in: adminIds } }).select("name email");
+  const admins = await User.find({ _id: { $in: adminIds } }).select("name email avatarId");
   const adminsById = new Map(admins.map((a) => [a.id, a]));
 
   const commentsByTask = new Map();
@@ -1643,25 +1643,6 @@ exports.remove = async (
 
     /*
     |--------------------------------------------------------------------------
-    | First hour lock check
-    |--------------------------------------------------------------------------
-    | Editable for the first hour, locked AFTER that.
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      task.lockedUntil &&
-      new Date() > new Date(task.lockedUntil)
-    ) {
-      return res.status(423).json({
-        message:
-          "Task is locked — the 1-hour edit window has passed",
-      });
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
     | Running task cannot delete
     |--------------------------------------------------------------------------
     */
@@ -1804,11 +1785,19 @@ exports.adminTasks = async (
 
     /*
     |--------------------------------------------------------------------------
-    | Date filter
+    | Date range filter
+    |--------------------------------------------------------------------------
+    | Supports a from/to range (startDate / endDate), either end optional.
+    | Still accepts a plain `date` param for backward compatibility, which
+    | just filters to that single day.
     |--------------------------------------------------------------------------
     */
 
-    if (req.query.date) {
+    if (req.query.startDate || req.query.endDate) {
+      where.taskDate = {};
+      if (req.query.startDate) where.taskDate.$gte = req.query.startDate;
+      if (req.query.endDate) where.taskDate.$lte = req.query.endDate;
+    } else if (req.query.date) {
 
       where.taskDate =
         req.query.date;
@@ -1909,7 +1898,6 @@ exports.adminTasks = async (
   }
 
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -2169,9 +2157,9 @@ exports.employeeSummary = async (
     */
 
     const employee =
-      await User.findById(employeeId).select(
-        "name email role status"
-      );
+  await User.findById(employeeId).select(
+    "name email role status avatarId"
+  );
 
 
     if (!employee) {
@@ -2388,7 +2376,7 @@ exports.employeeSummary = async (
 
     return res.json({
 
-      employee: {
+            employee: {
 
         id:
           employee.id,
@@ -2405,8 +2393,10 @@ exports.employeeSummary = async (
         status:
           employee.status,
 
-      },
+        avatarId:
+          employee.avatarId || "",
 
+      },
 
       todayMinutes:
 

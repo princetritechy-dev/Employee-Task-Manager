@@ -1,15 +1,6 @@
 const mongoose = require("mongoose");
 const { Project, User, Task, Client } = require("../models");
 
-/*
-|--------------------------------------------------------------------------
-| Serialize project
-|--------------------------------------------------------------------------
-| Attaches resolved member users under "Users", and the resolved client
-| under "Client" — while keeping the raw members/clientId fields too.
-|--------------------------------------------------------------------------
-*/
-
 function serialize(project, users, client = null) {
   const json = project.toJSON();
   json.Users = users;
@@ -18,7 +9,7 @@ function serialize(project, users, client = null) {
 }
 
 async function loadMembers(project) {
-  return User.find({ _id: { $in: project.members } }).select("name email");
+  return User.find({ _id: { $in: project.members } }).select("name email avatarId");
 }
 
 async function loadClient(project) {
@@ -39,7 +30,7 @@ exports.list = async (req, res) => {
     ];
 
     const users = await User.find({ _id: { $in: memberIds } }).select(
-      "name email"
+      "name email avatarId"
     );
     const usersById = new Map(users.map((u) => [u.id, u.toJSON()]));
 

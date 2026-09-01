@@ -8,6 +8,7 @@ const {
 
 router.post("/login", controller.login);
 router.get("/me", auth, controller.me);
+router.put("/profile", auth, controller.updateProfile);
 router.post(
   "/forgot-password",
   forgotPassword

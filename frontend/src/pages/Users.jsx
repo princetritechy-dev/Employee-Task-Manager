@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, Search, Eye, Pencil, Trash2 } from "lucide-react";
 import Layout from "../components/Layout";
 import ConfirmDialog from "../components/ConfirmDialog";
+import AvatarDisplay from "../components/AvatarDisplay";
 import api from "../api";
 
 export default function Users() {
@@ -17,7 +19,6 @@ export default function Users() {
   const [editUserForm, setEditUserForm] = useState(null);
   const [editUserError, setEditUserError] = useState("");
   const [savingUser, setSavingUser] = useState(false);
-  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
 
@@ -41,7 +42,6 @@ export default function Users() {
   useEffect(() => {
     loadUsers();
 
-    // Keep this list live without needing a manual reload.
     const interval = setInterval(loadUsers, 6000);
     return () => clearInterval(interval);
   }, []);
@@ -108,7 +108,9 @@ export default function Users() {
       <div className="page-head">
         <div>
           <h1>Users</h1>
-          <p className="muted">Every employee account in the system.</p>
+          <p className="muted">
+            {allUsers.length} {allUsers.length === 1 ? "employee" : "employees"} in the system.
+          </p>
         </div>
 
         <button className="btn" onClick={() => setShowCreateUserModal(true)}>
@@ -146,9 +148,16 @@ export default function Users() {
             <tbody>
               {filteredUsers.map((person) => (
                 <tr key={person.id}>
-                  <td>{person.name}</td>
-                  <td>{person.email}</td>
-                  <td style={{ textTransform: "capitalize" }}>{person.role}</td>
+                  <td>
+                    <div className="employee-cell">
+                      <AvatarDisplay avatarId={person.avatarId} name={person.name} size={38} className="employee-avatar" />
+                      <strong>{person.name}</strong>
+                    </div>
+                  </td>
+                  <td className="muted">{person.email}</td>
+                  <td>
+                    <span className="role-badge">{person.role}</span>
+                  </td>
                   <td>
                     <span
                       className={`status-badge ${
@@ -160,18 +169,27 @@ export default function Users() {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button
-                        className="btn small secondary"
-                        onClick={() => startEditUser(person)}
+                    <div className="users-actions">
+                      <Link
+                        to={`/admin/employee/${person.id}/dashboard`}
+                        className="project-card-icon-btn"
+                        title="View dashboard"
                       >
-                        Edit
+                        <Eye size={15} />
+                      </Link>
+                      <button
+                        className="project-card-icon-btn"
+                        onClick={() => startEditUser(person)}
+                        title="Edit user"
+                      >
+                        <Pencil size={15} />
                       </button>
                       <button
-                        className="btn small danger"
+                        className="project-card-icon-btn danger"
                         onClick={() => setConfirmDeleteUser(person)}
+                        title="Delete user"
                       >
-                        Delete
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>
@@ -231,49 +249,14 @@ export default function Users() {
               />
 
               <label>Password</label>
-
-              <div style={{ position: "relative" }}>
-                <input
-                  required
-                  type={showNewUserPassword ? "text" : "password"}
-                  minLength={6}
-                  value={newUser.password}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, password: e.target.value })
-                  }
-                  placeholder="At least 6 characters, letter + number"
-                  style={{ paddingRight: "42px", width: "100%" }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowNewUserPassword((prev) => !prev)}
-                  aria-label={
-                    showNewUserPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    border: "none",
-                    background: "transparent",
-                    cursor: "pointer",
-                    padding: "4px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {showNewUserPassword ? (
-                    <EyeOff size={19} />
-                  ) : (
-                    <Eye size={19} />
-                  )}
-                </button>
-              </div>
+              <input
+                required
+                type="password"
+                minLength={6}
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                placeholder="At least 6 characters, letter + number"
+              />
 
               <div className="form-actions" style={{ marginTop: "14px" }}>
                 <button className="btn" disabled={creatingUser}>

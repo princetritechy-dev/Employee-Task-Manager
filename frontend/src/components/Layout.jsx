@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Users as UsersIcon,
   LogOut,
-  UserCircle,
   Menu,
   X,
   Briefcase,
@@ -18,6 +17,8 @@ import {
 import { useState } from "react";
 import ChatWidget from "./ChatWidget";
 import GlobalSearch from "./GlobalSearch";
+import AvatarDisplay from "./AvatarDisplay";
+import { updateTabNotification } from "../utils/tabNotification";
 
 export default function Layout({ children, title }) {
   const navigate = useNavigate();
@@ -33,6 +34,13 @@ export default function Layout({ children, title }) {
     sessionStorage.clear();
     navigate("/login");
   }
+
+  // Slack-style tab badge: prefix the title with the unread count and
+  // swap in a red-dot favicon whenever there's something unread, restore
+  // both the moment it hits zero (e.g. the chat panel gets opened/read).
+  useEffect(() => {
+    updateTabNotification(unreadCount);
+  }, [unreadCount]);
 
   // ⌘K / Ctrl+K opens global search from anywhere in the app.
   useEffect(() => {
@@ -146,10 +154,8 @@ if (user?.role === "admin") {
 
         <div className="sidebar-bottom">
 
-          <div className="user-card">
-            <div className="user-avatar">
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
-            </div>
+          <Link to="/profile" className="user-card" onClick={() => setMobileOpen(false)}>
+            <AvatarDisplay avatarId={user?.avatarId} name={user?.name} size={36} />
 
             <div className="user-info">
               <strong>{user?.name || "User"}</strong>
@@ -159,7 +165,7 @@ if (user?.role === "admin") {
                   : "Employee"}
               </span>
             </div>
-          </div>
+          </Link>
 
           <button className="logout-btn" onClick={logout}>
             <LogOut size={18} />
@@ -207,8 +213,10 @@ if (user?.role === "admin") {
                 <span className="topbar-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
               )}
             </button>
-            <UserCircle size={22} />
-            <span>{user?.name}</span>
+            <Link to="/profile" className="topbar-profile-link">
+              <AvatarDisplay avatarId={user?.avatarId} name={user?.name} size={24} />
+              <span>{user?.name}</span>
+            </Link>
           </div>
 
         </header>

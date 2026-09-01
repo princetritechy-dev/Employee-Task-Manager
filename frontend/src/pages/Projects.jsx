@@ -4,14 +4,8 @@ import { Pencil, Plus, Search, Calendar, Trash2 } from "lucide-react";
 import Layout from "../components/Layout";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ProjectWizard from "../components/ProjectWizard";
+import AvatarDisplay from "../components/AvatarDisplay";
 import api from "../api";
-
-const AVATAR_COLORS = ["#2563EB", "#DB2777", "#059669", "#D97706", "#7C3AED", "#0891B2"];
-
-function avatarColor(name) {
-  const i = (name || "").charCodeAt(0) || 0;
-  return AVATAR_COLORS[i % AVATAR_COLORS.length];
-}
 
 function formatDate(d) {
   if (!d) return null;
@@ -45,8 +39,6 @@ export default function Projects() {
   useEffect(() => {
     load();
 
-    // Keep this list live — pick up projects created/edited/deleted
-    // elsewhere without needing a manual reload.
     const interval = setInterval(load, 6000);
     return () => clearInterval(interval);
   }, []);
@@ -132,14 +124,13 @@ export default function Projects() {
               <div className="project-card-footer">
                 <div className="project-card-avatars">
                   {visibleMembers.map((u) => (
-                    <span
+                    <AvatarDisplay
                       key={u.id}
+                      avatarId={u.avatarId}
+                      name={u.name}
+                      size={26}
                       className="project-avatar"
-                      style={{ background: avatarColor(u.name) }}
-                      title={u.name}
-                    >
-                      {u.name?.charAt(0)?.toUpperCase() || "?"}
-                    </span>
+                    />
                   ))}
                   {overflow > 0 && (
                     <span className="project-avatar project-avatar-more">+{overflow}</span>

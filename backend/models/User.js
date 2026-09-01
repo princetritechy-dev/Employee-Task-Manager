@@ -38,6 +38,14 @@ const userSchema = new Schema(
       default: "active",
     },
 
+    // Just a key into the shared preset avatar list (see
+    // frontend/src/avatarOptions.js) — never image data.
+    avatarId: {
+      type: String,
+      default: "",
+      maxlength: 40,
+    },
+
     // Forgot Password fields
     resetToken: {
       type: String,
