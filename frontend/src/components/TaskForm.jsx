@@ -454,7 +454,7 @@ export default function TaskForm({   onSaved,
             name="assignedBy"
             value={form.assignedBy}
             onChange={change}
-            placeholder="e.g. Sourav Sir"
+            placeholder="e.g. Person Name"
           />
 
         </div>
