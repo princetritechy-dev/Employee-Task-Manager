@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Eye, EyeOff } from "lucide-react";
 import Layout from "../components/Layout";
 import ConfirmDialog from "../components/ConfirmDialog";
 import api from "../api";
@@ -17,6 +17,7 @@ export default function Users() {
   const [editUserForm, setEditUserForm] = useState(null);
   const [editUserError, setEditUserError] = useState("");
   const [savingUser, setSavingUser] = useState(false);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
 
@@ -230,14 +231,49 @@ export default function Users() {
               />
 
               <label>Password</label>
-              <input
-                required
-                type="password"
-                minLength={6}
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                placeholder="At least 6 characters, letter + number"
-              />
+
+              <div style={{ position: "relative" }}>
+                <input
+                  required
+                  type={showNewUserPassword ? "text" : "password"}
+                  minLength={6}
+                  value={newUser.password}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
+                  placeholder="At least 6 characters, letter + number"
+                  style={{ paddingRight: "42px", width: "100%" }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowNewUserPassword((prev) => !prev)}
+                  aria-label={
+                    showNewUserPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showNewUserPassword ? (
+                    <EyeOff size={19} />
+                  ) : (
+                    <Eye size={19} />
+                  )}
+                </button>
+              </div>
 
               <div className="form-actions" style={{ marginTop: "14px" }}>
                 <button className="btn" disabled={creatingUser}>
