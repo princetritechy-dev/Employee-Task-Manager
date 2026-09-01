@@ -898,19 +898,6 @@ export default function AdminDashboard() {
                               <strong>
                                 Locked
                               </strong>
-
-                              <span>
-                                Until{" "}
-                                {new Date(
-                                  task.lockedUntil
-                                ).toLocaleTimeString(
-                                  [],
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }
-                                )}
-                              </span>
                             </div>
                           </>
                         ) : (
